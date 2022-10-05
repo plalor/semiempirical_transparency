@@ -10,7 +10,6 @@ N_OpenBeam = 1e6  # open beam num_particles
 N0 = 1e5          # thin target num_particles
 N1 = 1e7          # thick target num_particles
 
-
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/cargoZ/notebooks/data/"
@@ -213,13 +212,13 @@ for E in ("10", "6", "4"):
             with open(filename, "w") as f:
                 f.write(filestring)
 
-### Generating file with no target
+    ### Generating file with no target
 
-filename = "lmbda=0,N=%d.gdml" % N_OpenBeam
-filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+    filename = "E=%sMeV,lmbda=0,N=%d.gdml" % (E, N_OpenBeam)
+    filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://service-spi.web.cern.ch/service-spi/app/releases/GDML/GDML_2_10_0/src/GDMLSchema/gdml.xsd">
-  
+
 <define>
   <!-- collimator properties -->
   <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
@@ -236,24 +235,24 @@ filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
   <!-- loop index (for generating detector stack -->
   <variable name="i"/>
 </define>
-   
+
    <materials>
-    
+
     <material name="Vacuum" state="gas">
       <D unit="g/cm3" value="1e-12"/>
       <fraction n="1" ref="G4_AIR"/>
     </material>
-    
+
   </materials>
-    
+
   <!-- THE OUTPUT -->
   <define>
-  	<constant name="TextOutputOn" value="1"/> <!-- the value should be either 1 (true) or 0 -->
-  	<constant name="BriefOutputOn" value="0"/> <!-- enable this if you want the shorter version of the text output -->
-  	<constant name="VRMLvisualizationOn" value="0"/> <!-- 1 means that you want a VRML file -->
-  	<constant name="EventsToAccumulate" value="50"/> <!-- number of tracks to accumulate in the visualization -->
+    <constant name="TextOutputOn" value="1"/> <!-- the value should be either 1 (true) or 0 -->
+    <constant name="BriefOutputOn" value="0"/> <!-- enable this if you want the shorter version of the text output -->
+    <constant name="VRMLvisualizationOn" value="0"/> <!-- 1 means that you want a VRML file -->
+    <constant name="EventsToAccumulate" value="50"/> <!-- number of tracks to accumulate in the visualization -->
   </define>
-  
+
   <!-- CUTS...apply various cuts to make the computation more efficient -->
   <define>
     <constant name="LightProducingParticle" value="0"/> <!-- the particle which is actually producing light in the detector.  0 means ALL.  It will also kill all particles other than LightProducingParticle in the detector.  If in doubt set to 0. -->
@@ -284,18 +283,18 @@ filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <constant name="EventsToRun" value="{N_OpenBeam}"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
- 
+
   </define>
 
   <!-- definition of solid geometries -->
   <solids>
     <!-- world volume -->
     <box name="world_solid" x="20" y="20" z="20" lunit="m"/>
-    
+
     <!-- collimators -->
     <box name = "collimator_1" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
     <box name = "collimator_2" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
-    
+
     <!-- cadmium tungstate detectors -->
     <loop for="i" from="1" to="n_detectors" step="1">
       <box name = "CdWO4_detector[i]" x="x_detector" y="y_detector" z="z_detector" lunit= "cm"/>
@@ -305,13 +304,13 @@ filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
   <!-- PUTTING IT ALL TOGETHER -->
   <structure>
-       
+
      <!-- collimators -->
      <volume name="collimator_1_log">
        <materialref ref="G4_Pb"/>
        <solidref ref="collimator_1"/>
      </volume>
-     
+
      <volume name="collimator_2_log">
        <materialref ref="G4_Pb"/>
        <solidref ref="collimator_2"/>
@@ -324,23 +323,23 @@ filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
         <solidref ref="CdWO4_detector[i]"/>
       </volume>
     </loop>
-    
+
     <!-- top level world volume with all geometry elements -->
     <volume name="world_log">
       <materialref ref="Vacuum"/>
       <solidref ref="world_solid"/>  <!-- world_solid This should NEVER be changed -->
-      
+
       <!-- collimators -->
       <physvol name="collimator_1_phys">
         <volumeref ref="collimator_1_log"/>
         <position name="collimator_1_pos" unit="cm" x="dist_detector-x_collimator/2" y="(y_collimator+sep_collimator)/2" z="z_collimator/2"/>
       </physvol>
-      
+
       <physvol name="collimator_2_phys">
         <volumeref ref="collimator_2_log"/>
         <position name="collimator_2_pos" unit="cm" x="dist_detector-x_collimator/2" y="-(y_collimator+sep_collimator)/2" z="z_collimator/2"/>
       </physvol>
-      
+
       <!-- detector -->
       <loop for="i" from="1" to="n_detectors" step="1">
         <physvol name="det_phys[i]">
@@ -358,5 +357,5 @@ filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
   </setup>
 </gdml>
 """
-with open(filename, "w") as f:
-    f.write(filestring)
+    with open(filename, "w") as f:
+        f.write(filestring)

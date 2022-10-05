@@ -1,8 +1,8 @@
 #!/bin/bash
  
-#### Torque directives:
-#PBS -l nodes=1:ppn=1
-#PBS -l walltime=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=24:00:00
  
 cd /home/plalor/alphaCurveSim/run/torque #<-- change this to your own directory
 
