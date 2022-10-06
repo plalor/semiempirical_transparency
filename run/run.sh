@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $(root-config --bindir)/thisroot.sh
+# source $(root-config --bindir)/thisroot.sh
 run_dir="/Users/peter/Work/alphaCurveSim/run"
 source_dir="/Users/peter/Work/alphaCurveSim/src"
 
