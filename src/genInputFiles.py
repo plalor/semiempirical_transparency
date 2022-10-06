@@ -3,12 +3,12 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-zRange = np.array([6, 13, 26, 47, 82])  # different erlements to test
-n_lmbda = 11      # size of lambda mesh
+zRange = np.array([1, 6, 13, 26, 47, 74, 82, 92])  # different elements to test
+n_lmbda = 26      # size of lambda mesh
 lmbdaMax = 250    # maximum value of lambda
 N_OpenBeam = 1e6  # open beam num_particles
 N0 = 1e5          # thin target num_particles
-N1 = 1e7          # thick target num_particles
+N1 = 3e7          # thick target num_particles
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -54,7 +54,7 @@ for E in ("10", "6", "4"):
   <constant name="target_rho" value="target_lambda/x_target"/> <!-- target density -->
   <!-- collimator properties -->
   <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
-  <constant name="y_collimator" value="200"/> <!-- depth in cm -->
+  <constant name="y_collimator" value="20"/>  <!-- depth in cm -->
   <constant name="z_collimator" value="400"/> <!-- height in cm -->
   <constant name="sep_collimator" value="1"/> <!-- separation between collimators in cm -->
   <!-- detector properties -->
@@ -222,7 +222,7 @@ for E in ("10", "6", "4"):
 <define>
   <!-- collimator properties -->
   <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
-  <constant name="y_collimator" value="200"/> <!-- depth in cm -->
+  <constant name="y_collimator" value="20"/>  <!-- depth in cm -->
   <constant name="z_collimator" value="400"/> <!-- height in cm -->
   <constant name="sep_collimator" value="1"/> <!-- separation between collimators in cm -->
   <!-- detector properties -->
