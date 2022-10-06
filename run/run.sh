@@ -20,6 +20,9 @@ do
   output_file="${output_dir}/${filebase}.root"
   mkdir $output_dir
   cp ${run_dir}/input_spectrum_${E}MeV.txt ${output_dir}/input_spectrum.txt
+  sed -e "s|output_dir|$output_dir|" -e "s|input_file|$input_file|" -e "s|output_file|$output_file|" $run_dir/batch_default.sh > $output_dir/batch.sh
+  
   cd $output_dir
-  grasshopper $input_file $output_file
+  # sbatch batch.sh
+  # grasshopper $input_file $output_file 0
 done
