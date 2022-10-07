@@ -38,7 +38,7 @@ for E in ("10", "6", "4"):
             b0 = b * np.exp(-atten * lmbda)
             logT = -np.log(np.sum(b0 * dE_g))
             f = np.maximum((logT_inf - logT) / logT_inf, 0)            
-            N = f * N0 + (1 - f) * N1
+            N = int(f * N0 + (1 - f) * N1)
             
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
