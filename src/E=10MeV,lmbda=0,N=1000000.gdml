@@ -12,7 +12,7 @@
   <constant name="x_detector" value="3.0"/> <!-- thickness in cm -->
   <constant name="y_detector" value="1.5"/> <!-- depth in cm -->
   <constant name="z_detector" value="0.46"/>  <!-- height in cm -->
-  <constant name="dist_detector" value="700"/> <!-- distance in cm -->
+  <constant name="dist_detector" value="700"/> <!-- distance from source to detector in cm -->
   <!-- do some calculations to determine these quantities -->
   <constant name="n_detectors" value="869"/> <!-- z_collimator // z_detector = 869 -->
   <!-- loop index (for generating detector stack -->
@@ -63,7 +63,7 @@
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
     <quantity name="ThetaMax" value="pi/2"/>
-    <constant name="EventsToRun" value="1000000.0"/>
+    <constant name="EventsToRun" value="1000000"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
 

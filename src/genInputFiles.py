@@ -8,7 +8,7 @@ n_lmbda = 26      # size of lambda mesh
 lmbdaMax = 250    # maximum value of lambda
 N_OpenBeam = 1e6  # open beam num_particles
 N0 = 1e5          # thin target num_particles
-N1 = 1e8          # thick target num_particles
+N1 = 2e8          # thick target num_particles
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -50,7 +50,8 @@ for E in ("10", "6", "4"):
   <constant name="target_lambda" value="{lmbda}"/> <!-- target area density, g/cm^2 -->
   <constant name="x_target" value="100"/> <!-- target thickness in cm -->
   <constant name="y_target" value="200"/> <!-- target depth in cm -->
-  <constant name="z_target" value="400"/> <!-- target height in cm -->
+  <constant name="z_target" value="250"/> <!-- target height in cm -->
+  <constant name="dist_target" value="300"/> <!-- distance from source to target in cm -->
   <constant name="target_rho" value="target_lambda/x_target"/> <!-- target density -->
   <!-- collimator properties -->
   <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
@@ -61,7 +62,7 @@ for E in ("10", "6", "4"):
   <constant name="x_detector" value="3.0"/> <!-- thickness in cm -->
   <constant name="y_detector" value="1.5"/> <!-- depth in cm -->
   <constant name="z_detector" value="0.46"/>  <!-- height in cm -->
-  <constant name="dist_detector" value="700"/> <!-- distance in cm -->
+  <constant name="dist_detector" value="700"/> <!-- distance from source to detector in cm -->
   <!-- do some calculations to determine these quantities -->
   <constant name="n_detectors" value="869"/> <!-- z_collimator // z_detector = 869 -->
   <!-- loop index (for generating detector stack -->
@@ -129,7 +130,7 @@ for E in ("10", "6", "4"):
     <box name="world_solid" x="20" y="20" z="20" lunit="m"/>
     
     <!-- target -->
-    <box name = "target_box" x="x_target" y="y_target" z="z_target" lunit= "cm"/>
+    <tube name="target_box" rmin="dist_target" rmax="dist_target+x_target" z="y_target" startphi="0" deltaphi="asin(z_target/(dist_target+x_target))" lunit= "cm"/>
     
     <!-- collimators -->
     <box name = "collimator_1" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
@@ -178,7 +179,8 @@ for E in ("10", "6", "4"):
       <!-- target -->
       <physvol name="target_phys">
         <volumeref ref="target_log"/>
-        <position name="target_pos" unit="cm" x="dist_detector/2" y="0" z="z_target/2"/>
+        <position name="target_pos" unit="cm" x="0" y="0" z="0"/>
+        <rotation name="target_rot" x="-pi/2"/>
       </physvol>
       
       <!-- collimators -->
@@ -213,7 +215,7 @@ for E in ("10", "6", "4"):
                 f.write(filestring)
 
     ### Generating file with no target
-
+    
     filename = "E=%sMeV,lmbda=0,N=%d.gdml" % (E, N_OpenBeam)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
@@ -229,7 +231,7 @@ for E in ("10", "6", "4"):
   <constant name="x_detector" value="3.0"/> <!-- thickness in cm -->
   <constant name="y_detector" value="1.5"/> <!-- depth in cm -->
   <constant name="z_detector" value="0.46"/>  <!-- height in cm -->
-  <constant name="dist_detector" value="700"/> <!-- distance in cm -->
+  <constant name="dist_detector" value="700"/> <!-- distance from source to detector in cm -->
   <!-- do some calculations to determine these quantities -->
   <constant name="n_detectors" value="869"/> <!-- z_collimator // z_detector = 869 -->
   <!-- loop index (for generating detector stack -->
@@ -280,7 +282,7 @@ for E in ("10", "6", "4"):
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
     <quantity name="ThetaMax" value="pi/2"/>
-    <constant name="EventsToRun" value="{N_OpenBeam}"/>
+    <constant name="EventsToRun" value="{int(N_OpenBeam)}"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
 
