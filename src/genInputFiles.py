@@ -35,8 +35,17 @@ for E in ("10", "6", "4"):
         atten = mu_tot(E_g, Z)
         material = materials[Z-1]
         for lmbda in lmbdaRange:
-            if (Z > 50 or Z == 1) and lmbda > 200:
+            if Z == 1 and lmbda > 180:
                 continue
+            if Z == 64 and lmbda > 230:
+                continue
+            if Z == 74 and lmbda > 220:
+                continue
+            if Z == 82 and lmbda > 210:
+                continue
+            if Z == 92 and lmbda > 200:
+                continue
+          
             b0 = b * np.exp(-atten * lmbda)
             logT = -np.log(np.sum(b0 * dE_g))
             f = np.maximum((logT_inf - logT) / logT_inf, 0)            
