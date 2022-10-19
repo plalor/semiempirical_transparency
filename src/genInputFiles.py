@@ -4,11 +4,11 @@ from XCOM import mu_tot
 ### File Input Parameters
 
 zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
-n_lmbda = 21      # size of lambda mesh
-lmbdaMax = 200    # maximum value of lambda
+n_lmbda = 26      # size of lambda mesh
+lmbdaMax = 250    # maximum value of lambda
 N_OpenBeam = 1e6  # open beam num_particles
 N0 = 1e5          # thin target num_particles
-N1 = 1e7          # thick target num_particles
+N1 = 1e8          # thick target num_particles
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -35,6 +35,8 @@ for E in ("10", "6", "4"):
         atten = mu_tot(E_g, Z)
         material = materials[Z-1]
         for lmbda in lmbdaRange:
+            if (Z > 50 or Z == 1) and lmbda > 200:
+                continue
             b0 = b * np.exp(-atten * lmbda)
             logT = -np.log(np.sum(b0 * dE_g))
             f = np.maximum((logT_inf - logT) / logT_inf, 0)            
