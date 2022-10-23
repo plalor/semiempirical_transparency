@@ -3,12 +3,10 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-#zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
-zRange = np.array([26])  # different elements to test
+zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
 n_lmbda = 31      # size of lambda mesh
 lmbdaMax = 300    # maximum value of lambda
-N_OpenBeam = 1e6  # open beam num_particles
-N0 = 1e5          # thin target num_particles
+N0 = 1e6          # thin target num_particles
 N1 = 2e8          # thick target num_particles
 
 ### Loading files to approximate the appropriate number of MC particles to run
@@ -226,7 +224,7 @@ for E in ("10", "6", "4"):
 
     ### Generating file with no target
     
-    filename = "E=%sMeV,lmbda=0,N=%d.gdml" % (E, N_OpenBeam)
+    filename = "E=%sMeV,lmbda=0,N=%d.gdml" % (E, N0)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://service-spi.web.cern.ch/service-spi/app/releases/GDML/GDML_2_10_0/src/GDMLSchema/gdml.xsd">
@@ -287,7 +285,7 @@ for E in ("10", "6", "4"):
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
     <quantity name="ThetaMax" value="pi/2"/>
-    <constant name="EventsToRun" value="{int(N_OpenBeam)}"/>
+    <constant name="EventsToRun" value="{int(N0)}"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
 
