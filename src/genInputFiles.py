@@ -3,12 +3,13 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
-n_lmbda = 26      # size of lambda mesh
-lmbdaMax = 250    # maximum value of lambda
+#zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
+zRange = np.array([26])  # different elements to test
+n_lmbda = 31      # size of lambda mesh
+lmbdaMax = 300    # maximum value of lambda
 N_OpenBeam = 1e6  # open beam num_particles
 N0 = 1e5          # thin target num_particles
-N1 = 1e8          # thick target num_particles
+N1 = 2e8          # thick target num_particles
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -16,7 +17,10 @@ path = "/Users/peter/Work/cargoZ/notebooks/data/"
 E_g = np.load(path + "E_g_10.npy")
 E_dep = np.load(path + "E_dep_10.npy")
 dE_g = E_g[1] - E_g[0]
-logT_inf = np.log(2**16 - 1)
+T_inf = 2**16 - 1
+b_10 = np.load(path + "b10MeV_10.npy")
+b_6 = np.load(path + "b6MeV_10.npy")
+b_4 = np.load(path + "b4MeV_10.npy")
 
 ### Creating files
 
@@ -26,29 +30,29 @@ materials = ["G4_H", "G4_He", "G4_Li", "G4_Be", "G4_B", "G4_C", "G4_N", "G4_O", 
 
 for E in ("10", "6", "4"):
     if E == "10":
-        b = np.load(path + "b10MeV_10.npy")
+        b = b_10
     elif E == "6":
-        b = np.load(path + "b6MeV_10.npy")
+        b = b_6
     elif E == "4":
-        b = np.load(path + "b4MeV_10.npy")
+        b = b_4
     for Z in zRange:
         atten = mu_tot(E_g, Z)
         material = materials[Z-1]
         for lmbda in lmbdaRange:
-            if Z == 1 and lmbda > 180:
+            ### Determine whether to include the element
+            T = 1 / (np.sum(b_4 * np.exp(-atten * lmbda) * dE_g))
+            if T > T_inf:
                 continue
-            if Z == 64 and lmbda > 230:
-                continue
-            if Z == 74 and lmbda > 220:
-                continue
-            if Z == 82 and lmbda > 210:
-                continue
-            if Z == 92 and lmbda > 200:
-                continue
-          
-            b0 = b * np.exp(-atten * lmbda)
-            logT = -np.log(np.sum(b0 * dE_g))
-            f = np.maximum((logT_inf - logT) / logT_inf, 0)            
+
+            T = 1 / (np.sum(b * np.exp(-atten * lmbda) * dE_g))
+            if T > T_inf:
+                print("Hmm, T > T_inf")
+                print("E =", E)
+                print("Z = ", Z)
+                print("lmbda =", lmbda)
+                print()
+            
+            f = (T_inf - T) / T_inf          
             N = int(f * N0 + (1 - f) * N1)
             
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
@@ -81,11 +85,6 @@ for E in ("10", "6", "4"):
 </define>
    
    <materials>
-    
-    <material name="Vacuum" state="gas">
-      <D unit="g/cm3" value="1e-12"/>
-      <fraction n="1" ref="G4_AIR"/>
-    </material>
     
     <material name="Target" state="solid">
       <D unit="g/cm3" value="target_rho"/>
@@ -184,7 +183,7 @@ for E in ("10", "6", "4"):
     
     <!-- top level world volume with all geometry elements -->
     <volume name="world_log">
-      <materialref ref="Vacuum"/>
+      <materialref ref="G4_AIR"/>
       <solidref ref="world_solid"/>  <!-- world_solid This should NEVER be changed -->
       
       <!-- target -->
@@ -250,11 +249,6 @@ for E in ("10", "6", "4"):
 </define>
 
    <materials>
-
-    <material name="Vacuum" state="gas">
-      <D unit="g/cm3" value="1e-12"/>
-      <fraction n="1" ref="G4_AIR"/>
-    </material>
 
   </materials>
 
@@ -339,7 +333,7 @@ for E in ("10", "6", "4"):
 
     <!-- top level world volume with all geometry elements -->
     <volume name="world_log">
-      <materialref ref="Vacuum"/>
+      <materialref ref="G4_AIR"/>
       <solidref ref="world_solid"/>  <!-- world_solid This should NEVER be changed -->
 
       <!-- collimators -->

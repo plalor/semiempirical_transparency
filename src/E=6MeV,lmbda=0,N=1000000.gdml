@@ -21,11 +21,6 @@
 
    <materials>
 
-    <material name="Vacuum" state="gas">
-      <D unit="g/cm3" value="1e-12"/>
-      <fraction n="1" ref="G4_AIR"/>
-    </material>
-
   </materials>
 
   <!-- THE OUTPUT -->
@@ -109,7 +104,7 @@
 
     <!-- top level world volume with all geometry elements -->
     <volume name="world_log">
-      <materialref ref="Vacuum"/>
+      <materialref ref="G4_AIR"/>
       <solidref ref="world_solid"/>  <!-- world_solid This should NEVER be changed -->
 
       <!-- collimators -->
