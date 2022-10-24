@@ -4,10 +4,11 @@ from XCOM import mu_tot
 ### File Input Parameters
 
 zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
-n_lmbda = 31      # size of lambda mesh
-lmbdaMax = 300    # maximum value of lambda
+n_lmbda = 26      # size of lambda mesh
+lmbdaMax = 250    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
-N1 = 2e8          # thick target num_particles
+N1 = 5e8          # thick target num_particles
+alpha_inf = 11
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -15,10 +16,10 @@ path = "/Users/peter/Work/cargoZ/notebooks/data/"
 E_g = np.load(path + "E_g_10.npy")
 E_dep = np.load(path + "E_dep_10.npy")
 dE_g = E_g[1] - E_g[0]
-T_inf = 2**16 - 1
 b_10 = np.load(path + "b10MeV_10.npy")
 b_6 = np.load(path + "b6MeV_10.npy")
 b_4 = np.load(path + "b4MeV_10.npy")
+T0 = np.exp(-alpha_inf)
 
 ### Creating files
 
@@ -37,20 +38,12 @@ for E in ("10", "6", "4"):
         atten = mu_tot(E_g, Z)
         material = materials[Z-1]
         for lmbda in lmbdaRange:
-            ### Determine whether to include the element
-            T = 1 / (np.sum(b_4 * np.exp(-atten * lmbda) * dE_g))
-            if T > T_inf:
+            if np.sum(b_4 * np.exp(-atten * lmbda) * dE_g) < T0: # Determine whether to include
                 continue
-
-            T = 1 / (np.sum(b * np.exp(-atten * lmbda) * dE_g))
-            if T > T_inf:
-                print("Hmm, T > T_inf")
-                print("E =", E)
-                print("Z = ", Z)
-                print("lmbda =", lmbda)
-                print()
-            
-            f = (T_inf - T) / T_inf          
+                
+            T = np.sum(b * np.exp(-atten * lmbda) * dE_g)
+            assert T > T0
+            f = 1 - T0 / T       
             N = int(f * N0 + (1 - f) * N1)
             
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
@@ -63,8 +56,8 @@ for E in ("10", "6", "4"):
   <constant name="target_lambda" value="{lmbda}"/> <!-- target area density, g/cm^2 -->
   <constant name="x_target" value="100"/> <!-- target thickness in cm -->
   <constant name="y_target" value="200"/> <!-- target depth in cm -->
-  <constant name="z_target" value="250"/> <!-- target height in cm -->
-  <constant name="dist_target" value="300"/> <!-- distance from source to target in cm -->
+  <constant name="z_target" value="400"/> <!-- target height in cm -->
+  <constant name="dist_target" value="350"/> <!-- distance from source to target in cm -->
   <constant name="target_rho" value="target_lambda/x_target"/> <!-- target density -->
   <!-- collimator properties -->
   <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
@@ -138,7 +131,7 @@ for E in ("10", "6", "4"):
     <box name="world_solid" x="20" y="20" z="20" lunit="m"/>
     
     <!-- target -->
-    <tube name="target_box" rmin="dist_target" rmax="dist_target+x_target" z="y_target" startphi="0" deltaphi="asin(z_target/(dist_target+x_target))" lunit= "cm"/>
+    <box name = "target_box" x="x_target" y="y_target" z="z_target" lunit= "cm"/>
     
     <!-- collimators -->
     <box name = "collimator_1" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
@@ -187,8 +180,7 @@ for E in ("10", "6", "4"):
       <!-- target -->
       <physvol name="target_phys">
         <volumeref ref="target_log"/>
-        <position name="target_pos" unit="cm" x="0" y="0" z="0"/>
-        <rotation name="target_rot" x="-pi/2"/>
+        <position name="target_pos" unit="cm" x="dist_detector/2" y="0" z="z_target/2"/>
       </physvol>
       
       <!-- collimators -->
