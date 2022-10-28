@@ -77,7 +77,6 @@ for E in ("10", "6", "4"):
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
-            
             ### Determine whether to include material
             if Z <= 100:
                 if calcAlpha(lmbda, Z, b_4) > alpha_inf:
