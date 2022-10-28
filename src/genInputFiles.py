@@ -3,12 +3,13 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
+#zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
+zRange = np.array([26])
 n_lmbda = 31      # size of lambda mesh
 lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
-N1 = 2e9          # thick target num_particles
-alpha_inf = 10
+N1 = 2e8          # thick target num_particles
+max_error = 0.01
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -16,34 +17,21 @@ path = "/Users/peter/Work/cargoZ/notebooks/data/"
 R = np.load(path + "R_10.npy")
 E_g = np.load(path + "E_g_10.npy")
 E_dep = np.load(path + "E_dep_10.npy")
-q = R.T @ E_dep
 b_10 = np.load(path + "b10MeV_10.npy")
 b_6 = np.load(path + "b6MeV_10.npy")
 b_4 = np.load(path + "b4MeV_10.npy")
-T0 = np.exp(-alpha_inf)
 
-def calcAlpha(lmbda, Z, b):
-    atten = mu_tot(E_g, Z)
-    m0 = np.exp(-atten * lmbda)
-    q = R.T @ E_dep
-    d = np.dot(q, b)
-    d0 = np.dot(q, m0 * b)
-    alpha = np.log(d / d0)
-    return alpha
-
-def calcCompoundAlpha(lmbda_arr, Z_arr, b):
+def calcRelError(lmbda_arr, Z_arr, b):
     b0 = b.copy()
-    for i in range(len(Z_arr)):
-        atten = mu_tot(E_g, Z_arr[i])
-        m0 = np.exp(-atten * lmbda_arr[i])
+    for lmbda, Z in zip(lmbda_arr, Z_arr):
+        atten = mu_tot(E_g, Z)
+        m0 = np.exp(-atten * lmbda)
         b0 *= m0
-    q = R.T @ E_dep
-    d = np.dot(q, b)
-    d0 = np.dot(q, b0)
-    alpha = np.log(d / d0)
-    return alpha
+    d0 = np.dot(R.T @ E_dep, b0)
+    sigma0 = np.sqrt(np.dot(R.T @ E_dep**2, b))
+    return sigma0 / d0
 
-### Creating files
+### Defining materials files
 
 lmbdaRange = np.linspace(0, lmbdaMax, n_lmbda, dtype=int)[1:]
 
@@ -51,22 +39,24 @@ material_name = ["G4_H", "G4_He", "G4_Li", "G4_Be", "G4_B", "G4_C", "G4_N", "G4_
 material_Z = np.arange(1, len(material_name)+1)
 materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
-### add compound materials with unique Z identifier materials
-compound_Z = {}
-compound_frac = {}
+# add compound materials with unique Z identifier materials
+# compound_Z = {}
+# compound_frac = {}
 
-materials[101] = "G4_POLYETHYLENE"
-compound_Z[101] = np.array([1, 6])
-compound_frac[101] = np.array([0.143711, 0.856289])
+# materials[101] = "G4_POLYETHYLENE"
+# compound_Z[101] = np.array([1, 6])
+# compound_frac[101] = np.array([0.143711, 0.856289])
 
-materials[102] = "G4_SILVER_CHLORIDE"
-compound_Z[102] = np.array([17, 47])
-compound_frac[102] = np.array([0.247368, 0.752632])
+# materials[102] = "G4_SILVER_CHLORIDE"
+# compound_Z[102] = np.array([17, 47])
+# compound_frac[102] = np.array([0.247368, 0.752632])
 
-materials[103] = "G4_URANIUM_OXIDE"
-compound_Z[103] = np.array([8, 92])
-compound_frac[103] = np.array([0.118502, 0.881498])
-                     
+# materials[103] = "G4_URANIUM_OXIDE"
+# compound_Z[103] = np.array([8, 92])
+# compound_frac[103] = np.array([0.118502, 0.881498])
+
+### Creating files
+
 for E in ("10", "6", "4"):
     if E == "10":
         b = b_10
@@ -77,24 +67,26 @@ for E in ("10", "6", "4"):
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
-            ### Determine whether to include material
-            if Z <= 100:
-                if calcAlpha(lmbda, Z, b_4) > alpha_inf:
-                    continue
-                else:
-                    alpha = calcAlpha(lmbda, Z, b)
-            elif Z > 100:
+            if Z > 100:
                 lmbda_arr = lmbda * compound_frac[Z]
                 Z_arr = compound_Z[Z]
-                if calcCompoundAlpha(lmbda_arr, Z_arr, b_4) > alpha_inf:
-                    continue
-                else:
-                    alpha = calcCompoundAlpha(lmbda_arr, Z_arr, b)
-            ###
-
-            assert alpha < alpha_inf
-            f = 1 - np.exp(alpha - alpha_inf)   
-            N = int(f * N0 + (1 - f) * N1)
+            else:
+                lmbda_arr = [lmbda]
+                Z_arr = [Z]
+            if calcRelError(lmbda_arr, Z_arr, b_4)/np.sqrt(N1) > max_error:
+                continue
+                    
+            error = calcRelError(lmbda_arr, Z_arr, b)
+            #N = int(N0 + (error / max_error)**2)
+            N = int((error / max_error)**2)
+            
+            if Z < 100:
+                dE_g = E_g[1] - E_g[0]
+                num_hits = N * np.sum(b * np.exp(-mu_tot(E_g, Z) * lmbda) * dE_g)
+                print("E = %sMeV, Z = %d, lmbda = %d, N=%d" % (E, Z, lmbda, N))
+                print("num_hits = %d" % num_hits)
+                print("rel_error =", (error / np.sqrt(N)))
+                print()
             
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
