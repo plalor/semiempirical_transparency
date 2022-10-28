@@ -3,7 +3,7 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-zRange = np.array([1, 6, 13, 20, 26, 32, 47, 64, 74, 82, 92])  # different elements to test
+zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
 n_lmbda = 26      # size of lambda mesh
 lmbdaMax = 250    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
@@ -13,20 +13,60 @@ alpha_inf = 11
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/cargoZ/notebooks/data/"
+R = np.load(path + "R_10.npy")
 E_g = np.load(path + "E_g_10.npy")
 E_dep = np.load(path + "E_dep_10.npy")
-dE_g = E_g[1] - E_g[0]
+q = R.T @ E_dep
 b_10 = np.load(path + "b10MeV_10.npy")
 b_6 = np.load(path + "b6MeV_10.npy")
 b_4 = np.load(path + "b4MeV_10.npy")
 T0 = np.exp(-alpha_inf)
 
+def calcAlpha(lmbda, Z, b):
+    atten = mu_tot(E_g, Z)
+    m0 = np.exp(-atten * lmbda)
+    q = R.T @ E_dep
+    d = np.dot(q, b)
+    d0 = np.dot(q, m0 * b)
+    alpha = np.log(d / d0)
+    return alpha
+
+def calcCompoundAlpha(lmbda_arr, Z_arr, b):
+    b0 = b.copy()
+    for i in range(len(Z_arr)):
+        atten = mu_tot(E_g, Z_arr[i])
+        m0 = np.exp(-atten * lmbda_arr[i])
+        b0 *= m0
+    q = R.T @ E_dep
+    d = np.dot(q, b)
+    d0 = np.dot(q, b0)
+    alpha = np.log(d / d0)
+    return alpha
+
 ### Creating files
 
 lmbdaRange = np.linspace(0, lmbdaMax, n_lmbda, dtype=int)[1:]
 
-materials = ["G4_H", "G4_He", "G4_Li", "G4_Be", "G4_B", "G4_C", "G4_N", "G4_O", "G4_F", "G4_Ne", "G4_Na", "G4_Mg", "G4_Al", "G4_Si", "G4_P", "G4_S", "G4_Cl", "G4_Ar", "G4_K", "G4_Ca", "G4_Sc", "G4_Ti", "G4_V", "G4_Cr", "G4_Mn", "G4_Fe", "G4_Co", "G4_Ni", "G4_Cu", "G4_Zn", "G4_Ga", "G4_Ge", "G4_As", "G4_Se", "G4_Br", "G4_Kr", "G4_Rb", "G4_Sr", "G4_Y", "G4_Zr", "G4_Nb", "G4_Mo", "G4_Tc", "G4_Ru", "G4_Rh", "G4_Pd", "G4_Ag", "G4_Cd", "G4_In", "G4_Sn", "G4_Sb", "G4_Te", "G4_I", "G4_Xe", "G4_Cs", "G4_Ba", "G4_La", "G4_Ce", "G4_Pr", "G4_Nd", "G4_Pm", "G4_Sm", "G4_Eu", "G4_Gd", "G4_Tb", "G4_Dy", "G4_Ho", "G4_Er", "G4_Tm", "G4_Yb", "G4_Lu", "G4_Hf", "G4_Ta", "G4_W", "G4_Re", "G4_Os", "G4_Ir", "G4_Pt", "G4_Au", "G4_Hg", "G4_Tl", "G4_Pb", "G4_Bi", "G4_Po", "G4_At", "G4_Rn", "G4_Fr", "G4_Ra", "G4_Ac", "G4_Th", "G4_Pa", "G4_U", "G4_Np", "G4_Pu", "G4_Am", "G4_Cm", "G4_Bk", "G4_Cf"]
+material_name = ["G4_H", "G4_He", "G4_Li", "G4_Be", "G4_B", "G4_C", "G4_N", "G4_O", "G4_F", "G4_Ne", "G4_Na", "G4_Mg", "G4_Al", "G4_Si", "G4_P", "G4_S", "G4_Cl", "G4_Ar", "G4_K", "G4_Ca", "G4_Sc", "G4_Ti", "G4_V", "G4_Cr", "G4_Mn", "G4_Fe", "G4_Co", "G4_Ni", "G4_Cu", "G4_Zn", "G4_Ga", "G4_Ge", "G4_As", "G4_Se", "G4_Br", "G4_Kr", "G4_Rb", "G4_Sr", "G4_Y", "G4_Zr", "G4_Nb", "G4_Mo", "G4_Tc", "G4_Ru", "G4_Rh", "G4_Pd", "G4_Ag", "G4_Cd", "G4_In", "G4_Sn", "G4_Sb", "G4_Te", "G4_I", "G4_Xe", "G4_Cs", "G4_Ba", "G4_La", "G4_Ce", "G4_Pr", "G4_Nd", "G4_Pm", "G4_Sm", "G4_Eu", "G4_Gd", "G4_Tb", "G4_Dy", "G4_Ho", "G4_Er", "G4_Tm", "G4_Yb", "G4_Lu", "G4_Hf", "G4_Ta", "G4_W", "G4_Re", "G4_Os", "G4_Ir", "G4_Pt", "G4_Au", "G4_Hg", "G4_Tl", "G4_Pb", "G4_Bi", "G4_Po", "G4_At", "G4_Rn", "G4_Fr", "G4_Ra", "G4_Ac", "G4_Th", "G4_Pa", "G4_U", "G4_Np", "G4_Pu", "G4_Am", "G4_Cm", "G4_Bk", "G4_Cf"]
+material_Z = np.arange(1, len(material_name)+1)
+materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
+### add compound materials with unique Z identifier materials
+compound_Z = {}
+compound_frac = {}
+
+materials[101] = "G4_POLYETHYLENE"
+compound_Z[101] = np.array([1, 6])
+compound_frac[101] = np.array([0.143711, 0.856289])
+
+materials[102] = "G4_SILVER_CHLORIDE"
+compound_Z[102] = np.array([17, 47])
+compound_frac[102] = np.array([0.247368, 0.752632])
+
+materials[103] = "G4_URANIUM_OXIDE"
+compound_Z[103] = np.array([8, 92])
+compound_frac[103] = np.array([0.118502, 0.881498])
+                     
 for E in ("10", "6", "4"):
     if E == "10":
         b = b_10
@@ -35,15 +75,26 @@ for E in ("10", "6", "4"):
     elif E == "4":
         b = b_4
     for Z in zRange:
-        atten = mu_tot(E_g, Z)
-        material = materials[Z-1]
+        material = materials[Z]
         for lmbda in lmbdaRange:
-            if np.sum(b_4 * np.exp(-atten * lmbda) * dE_g) < T0: # Determine whether to include
-                continue
-                
-            T = np.sum(b * np.exp(-atten * lmbda) * dE_g)
-            assert T > T0
-            f = 1 - T0 / T       
+            
+            ### Determine whether to include material
+            if Z <= 100:
+                if calcAlpha(lmbda, Z, b_4) > alpha_inf:
+                    continue
+                else:
+                    alpha = calcAlpha(lmbda, Z, b)
+            elif Z > 100:
+                lmbda_arr = lmbda * compound_frac[Z]
+                Z_arr = compound_Z[Z]
+                if calcCompoundAlpha(lmbda_arr, Z_arr, b_4) > alpha_inf:
+                    continue
+                else:
+                    alpha = calcCompoundAlpha(lmbda_arr, Z_arr, b)
+            ###
+
+            assert alpha < alpha_inf
+            f = 1 - np.exp(alpha - alpha_inf)   
             N = int(f * N0 + (1 - f) * N1)
             
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
