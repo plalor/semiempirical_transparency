@@ -4,11 +4,11 @@ from XCOM import mu_tot
 ### File Input Parameters
 
 zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
-n_lmbda = 26      # size of lambda mesh
-lmbdaMax = 250    # maximum value of lambda
+n_lmbda = 31      # size of lambda mesh
+lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
 N1 = 2e9          # thick target num_particles
-alpha_inf = 11
+alpha_inf = 10
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
