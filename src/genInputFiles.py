@@ -3,13 +3,12 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-#zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
-zRange = np.array([26])
+zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
 n_lmbda = 31      # size of lambda mesh
 lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
-N1 = 2e8          # thick target num_particles
-max_error = 0.01
+N1 = 2e9          # thick target num_particles
+max_error = 6e-4
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -28,7 +27,7 @@ def calcRelError(lmbda_arr, Z_arr, b):
         m0 = np.exp(-atten * lmbda)
         b0 *= m0
     d0 = np.dot(R.T @ E_dep, b0)
-    sigma0 = np.sqrt(np.dot(R.T @ E_dep**2, b))
+    sigma0 = np.sqrt(np.dot(R.T @ E_dep**2, b0))
     return sigma0 / d0
 
 ### Defining materials files
@@ -40,20 +39,20 @@ material_Z = np.arange(1, len(material_name)+1)
 materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 # add compound materials with unique Z identifier materials
-# compound_Z = {}
-# compound_frac = {}
+compound_Z = {}
+compound_frac = {}
 
-# materials[101] = "G4_POLYETHYLENE"
-# compound_Z[101] = np.array([1, 6])
-# compound_frac[101] = np.array([0.143711, 0.856289])
+materials[101] = "G4_POLYETHYLENE"
+compound_Z[101] = np.array([1, 6])
+compound_frac[101] = np.array([0.143711, 0.856289])
 
-# materials[102] = "G4_SILVER_CHLORIDE"
-# compound_Z[102] = np.array([17, 47])
-# compound_frac[102] = np.array([0.247368, 0.752632])
+materials[102] = "G4_SILVER_CHLORIDE"
+compound_Z[102] = np.array([17, 47])
+compound_frac[102] = np.array([0.247368, 0.752632])
 
-# materials[103] = "G4_URANIUM_OXIDE"
-# compound_Z[103] = np.array([8, 92])
-# compound_frac[103] = np.array([0.118502, 0.881498])
+materials[103] = "G4_URANIUM_OXIDE"
+compound_Z[103] = np.array([8, 92])
+compound_frac[103] = np.array([0.118502, 0.881498])
 
 ### Creating files
 
@@ -77,16 +76,7 @@ for E in ("10", "6", "4"):
                 continue
                     
             error = calcRelError(lmbda_arr, Z_arr, b)
-            #N = int(N0 + (error / max_error)**2)
-            N = int((error / max_error)**2)
-            
-            if Z < 100:
-                dE_g = E_g[1] - E_g[0]
-                num_hits = N * np.sum(b * np.exp(-mu_tot(E_g, Z) * lmbda) * dE_g)
-                print("E = %sMeV, Z = %d, lmbda = %d, N=%d" % (E, Z, lmbda, N))
-                print("num_hits = %d" % num_hits)
-                print("rel_error =", (error / np.sqrt(N)))
-                print()
+            N = int(N0 + (error / max_error)**2)
             
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
