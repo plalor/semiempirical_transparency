@@ -9,6 +9,8 @@ lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
 N1 = 2e9          # thick target num_particles
 max_error = 6e-4
+#xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
+xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
@@ -81,7 +83,7 @@ for E in ("10", "6", "4"):
             filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
-<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://service-spi.web.cern.ch/service-spi/app/releases/GDML/GDML_2_10_0/src/GDMLSchema/gdml.xsd">
+<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
   
 <define>
   <!-- target material -->
@@ -251,7 +253,7 @@ for E in ("10", "6", "4"):
     filename = "E=%sMeV,lmbda=0,N=%d.gdml" % (E, N0)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
-<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://service-spi.web.cern.ch/service-spi/app/releases/GDML/GDML_2_10_0/src/GDMLSchema/gdml.xsd">
+<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
 
 <define>
   <!-- collimator properties -->
