@@ -42,19 +42,19 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 # add compound materials with unique Z identifier materials
 compound_Z = {}
-compound_frac = {}
+compound_f = {}
 
 materials[101] = "G4_POLYETHYLENE"
 compound_Z[101] = np.array([1, 6])
-compound_frac[101] = np.array([0.143711, 0.856289])
+compound_f[101] = np.array([0.143711, 0.856289])
 
 materials[102] = "G4_SILVER_CHLORIDE"
 compound_Z[102] = np.array([17, 47])
-compound_frac[102] = np.array([0.247368, 0.752632])
+compound_f[102] = np.array([0.247368, 0.752632])
 
 materials[103] = "G4_URANIUM_OXIDE"
 compound_Z[103] = np.array([8, 92])
-compound_frac[103] = np.array([0.118502, 0.881498])
+compound_f[103] = np.array([0.118502, 0.881498])
 
 ### Creating files
 
@@ -69,7 +69,7 @@ for E in ("10", "6", "4"):
         material = materials[Z]
         for lmbda in lmbdaRange:
             if Z > 100:
-                lmbda_arr = lmbda * compound_frac[Z]
+                lmbda_arr = lmbda * compound_f[Z]
                 Z_arr = compound_Z[Z]
             else:
                 lmbda_arr = [lmbda]
@@ -80,7 +80,7 @@ for E in ("10", "6", "4"):
             error = calcRelError(lmbda_arr, Z_arr, b)
             N = int(N0 + (error / max_error)**2)
             
-            filename = "E=%sMeV,lmbda=%d,Z=%d,N=%d.gdml" % (E, lmbda, Z, N)
+            filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
@@ -250,7 +250,7 @@ for E in ("10", "6", "4"):
 
     ### Generating file with no target
     
-    filename = "E=%sMeV,lmbda=0,N=%d.gdml" % (E, N0)
+    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E, N0)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
