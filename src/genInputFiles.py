@@ -14,12 +14,10 @@ xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
-path = "/Users/peter/Work/cargoZ/notebooks/data/"
+path = "/Users/peter/Work/radiography/data/"
 R = np.load(path + "R_10.npy")
 E_g = np.load(path + "E_g_10.npy")
 E_dep = np.load(path + "E_dep_10.npy")
-b_10 = np.load(path + "b10MeV_10.npy")
-b_6 = np.load(path + "b6MeV_10.npy")
 b_4 = np.load(path + "b4MeV_10.npy")
 
 def calcRelError(lmbda_arr, Z_arr, b):
@@ -58,13 +56,8 @@ compound_f[103] = np.array([0.118502, 0.881498])
 
 ### Creating files
 
-for E in ("10", "6", "4"):
-    if E == "10":
-        b = b_10
-    elif E == "6":
-        b = b_6
-    elif E == "4":
-        b = b_4
+for E in ("6.3", "5.7"):
+    b = np.load(path + "b%sMeV_10.npy" % E)
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
@@ -245,12 +238,12 @@ for E in ("10", "6", "4"):
   </setup>
 </gdml>
 """
-            with open(filename, "w") as f:
-                f.write(filestring)
+            #with open(filename, "w") as f:
+                #f.write(filestring)
 
     ### Generating file with no target
     
-    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E, N0)
+    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E, 10*N0)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
@@ -311,7 +304,7 @@ for E in ("10", "6", "4"):
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
     <quantity name="ThetaMax" value="pi/2"/>
-    <constant name="EventsToRun" value="{int(N0)}"/>
+    <constant name="EventsToRun" value="{10*int(N0)}"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
 
