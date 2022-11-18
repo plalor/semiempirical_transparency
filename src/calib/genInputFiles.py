@@ -5,9 +5,8 @@ from XCOM import mu_tot
 
 zRange = np.array([6, 26, 82])
 lmbdaRange = np.array([50, 100, 150])
-num_jobs = 5
-max_error = 1e-2
-#max_error = 3e-5
+num_jobs = 20
+max_error = 4e-5
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
@@ -41,9 +40,6 @@ for E in ["10", "6", "4", "6.3", "5.7"]:
         for lmbda in lmbdaRange:
             error = calcRelError(lmbda, Z, b)
             N = int((error / max_error)**2 / num_jobs)
-            
-            if N > 2e9:
-                print("N too large, N = %.2e" % N)
             
             filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
