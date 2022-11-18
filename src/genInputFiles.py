@@ -8,6 +8,7 @@ n_lmbda = 31      # size of lambda mesh
 lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
 N1 = 2e9          # thick target num_particles
+N_openBeam = 3e7  # open beam num_particles
 max_error = 6e-4
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
@@ -243,7 +244,7 @@ for E in ("10", "6", "4", "6.3", "5.7"):
 
     ### Generating file with no target
     
-    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E, 10*N0)
+    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E, N_openBeam)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
@@ -304,7 +305,7 @@ for E in ("10", "6", "4", "6.3", "5.7"):
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
     <quantity name="ThetaMax" value="pi/2"/>
-    <constant name="EventsToRun" value="{10*int(N0)}"/>
+    <constant name="EventsToRun" value="{int(N_openBeam)}"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
 
