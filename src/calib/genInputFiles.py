@@ -33,7 +33,7 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 ### Creating files
 
-for E in ["10", "6", "4", "9.7", "6.3", "5.7"]:
+for E in ["9.7", "6.3", "5.7"]:
     b = np.load(path + "b%sMeV_10.npy" % E)
     for Z in zRange:
         material = materials[Z]
