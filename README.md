@@ -1,3 +1,3 @@
-### Radiography
+# semiempirical_transparency
 
-Repository for simulating radiography measurements
+Semiempirical_transparency is a repository for running radiography simulations and comparing them to different analytic and semiempirical models. This analysis reveals that the free streaming model shows a clear bias compared to the simulated results. The semiempirical model shows excellent agreement with experimental data.
