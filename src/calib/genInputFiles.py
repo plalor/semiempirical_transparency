@@ -13,10 +13,10 @@ xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/radiography/data/"
-R = np.load(path + "R_10.npy")
-E_g = np.load(path + "E_g_10.npy")
-E_dep = np.load(path + "E_dep_10.npy")
-b_4 = np.load(path + "b4MeV_10.npy")
+R = np.load(path + "R_10.3MeV.npy")
+E_g = np.load(path + "E_g_10.3.npy")
+E_dep = np.load(path + "E_dep_10.3.npy")
+b_4 = np.load(path + "b_4MeV_10.3.npy")
 
 def calcRelError(lmbda, Z, b):
     atten = mu_tot(E_g, Z)
@@ -34,7 +34,7 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 ### Creating files
 
 for E in ["10.3", "5.5"]:
-    b = np.load(path + "b%sMeV_10.npy" % E)
+    b = np.load(path + "b_%sMeV_10.3.npy" % E)
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
@@ -109,7 +109,7 @@ for E in ["10.3", "5.5"]:
     <quantity name="BeamOffsetY"  type="coordinate" value="0" unit="cm"/>
     <quantity name="BeamOffsetZ"  type="coordinate" value="0" unit="cm"/>
     <quantity name="BeamSize" type="coordinate" value="-1" unit="mm"/>
-    <quantity name="BeamEnergy" type="energy" value="-1" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
+    <quantity name="BeamEnergy" type="energy" value="-2" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
     <quantity name="PhiMin" value="-atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
@@ -270,7 +270,7 @@ for E in ["10.3", "5.5"]:
     <quantity name="BeamOffsetY"  type="coordinate" value="0" unit="cm"/>
     <quantity name="BeamOffsetZ"  type="coordinate" value="0" unit="cm"/>
     <quantity name="BeamSize" type="coordinate" value="-1" unit="mm"/>
-    <quantity name="BeamEnergy" type="energy" value="-1" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
+    <quantity name="BeamEnergy" type="energy" value="-2" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
     <quantity name="PhiMin" value="-atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
