@@ -13,16 +13,16 @@ xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/radiography/data/"
-R = np.load(path + "R_10.3MeV.npy")
-E_g = np.load(path + "E_g_10.3.npy")
-E_dep = np.load(path + "E_dep_10.3.npy")
-b_4 = np.load(path + "b_4MeV_10.3.npy")
+D = np.load(path + "D_10.3.npy")
+D2 = np.load(path + "D2_10.3.npy")
+E = np.load(path + "E_10.3.npy")
+phi_4 = np.load(path + "phi_4MeV_10.3.npy")
 
-def calcRelError(lmbda, Z, b):
-    atten = mu_tot(E_g, Z)
-    m0 = np.exp(-atten * lmbda)
-    d0 = np.dot(R.T @ E_dep, m0 * b)
-    sigma0 = np.sqrt(np.dot(R.T @ E_dep**2, m0 * b))
+def calcRelError(lmbda, Z, phi):
+    mu = mu_tot(E, Z)
+    m0 = np.exp(-mu * lmbda)
+    d0 = np.dot(D, m0 * phi)
+    sigma0 = np.sqrt(np.dot(D2, m0 * phi))
     return sigma0 / d0
 
 ### Defining materials files
@@ -33,15 +33,15 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 ### Creating files
 
-for E in ["10.3", "5.5"]:
-    b = np.load(path + "b_%sMeV_10.3.npy" % E)
+for E0 in ["10.3", "5.5"]:
+    phi = np.load(path + "phi_%sMeV_10.3.npy" % E0)
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
-            error = calcRelError(lmbda, Z, b)
+            error = calcRelError(lmbda, Z, phi)
             N = int((error / max_error)**2 / num_jobs)
             
-            filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E, lmbda, Z, N)
+            filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E0, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
@@ -211,10 +211,10 @@ for E in ["10.3", "5.5"]:
 
     ### Generating file with no target
       
-    error = calcRelError(0, 26, b)
+    error = calcRelError(0, 26, phi)
     N = int((error / max_error)**2)
         
-    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E, N)
+    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E0, N)
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">

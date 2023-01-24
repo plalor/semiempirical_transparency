@@ -15,19 +15,19 @@ xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/radiography/data/"
-R = np.load(path + "R_10.3MeV.npy")
-E_g = np.load(path + "E_g_10.3.npy")
-E_dep = np.load(path + "E_dep_10.3.npy")
-b_4 = np.load(path + "b_4MeV_10.3.npy")
+D = np.load(path + "D_10.3.npy")
+D2 = np.load(path + "D2_10.3.npy")
+E = np.load(path + "E_10.3.npy")
+phi_4 = np.load(path + "phi_4MeV_10.3.npy")
 
-def calcRelError(lmbda_arr, Z_arr, b):
-    b0 = b.copy()
+def calcRelError(lmbda_arr, Z_arr, phi):
+    phi0 = phi.copy()
     for lmbda, Z in zip(lmbda_arr, Z_arr):
-        atten = mu_tot(E_g, Z)
-        m0 = np.exp(-atten * lmbda)
-        b0 *= m0
-    d0 = np.dot(R.T @ E_dep, b0)
-    sigma0 = np.sqrt(np.dot(R.T @ E_dep**2, b0))
+        mu = mu_tot(E, Z)
+        m0 = np.exp(-mu * lmbda)
+        phi0 *= m0
+    d0 = np.dot(D, phi0)
+    sigma0 = np.sqrt(np.dot(D2, phi0))
     return sigma0 / d0
 
 ### Defining materials files
@@ -56,8 +56,8 @@ compound_f[103] = np.array([0.118502, 0.881498])
 
 ### Creating files
 
-for E in ["10.3", "5.5"]:
-    b = np.load(path + "b_%sMeV_10.3.npy" % E)
+for E0 in ["10.3", "5.5"]:
+    phi = np.load(path + "phi_%sMeV_10.3.npy" % E0)
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
@@ -67,13 +67,13 @@ for E in ["10.3", "5.5"]:
             else:
                 lmbda_arr = [lmbda]
                 Z_arr = [Z]
-            if calcRelError(lmbda_arr, Z_arr, b_4)/np.sqrt(N1) > max_error:
+            if calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
                 continue
                     
-            error = calcRelError(lmbda_arr, Z_arr, b)
+            error = calcRelError(lmbda_arr, Z_arr, phi)
             N = int(N0 + (error / max_error)**2)
             
-            filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E, lmbda, Z, N)
+            filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E0, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">

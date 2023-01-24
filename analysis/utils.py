@@ -26,10 +26,10 @@ def calcLookupTables(npy_file, *args):
     if len(args) == 0:
         lookup_alpha = np.load(npy_file, allow_pickle='TRUE').item()
         return lookup_alpha
-    elif len(args) == 9:
-        path, energies, thetaMax, R, E_dep, attenMat, zRange, compound_Z, compound_f = args
+    elif len(args) == 8:
+        path, energies, theta, D, mu_mat, zRange, compound_Z, compound_f = args
     else:
-        path, energies, thetaMax, R, E_dep, attenMat, zRange = args
+        path, energies, theta, D, mu_mat, zRange = args
     t0 = time()
     print("Building lookup tables...")
     E_openBeam = {}
@@ -67,16 +67,16 @@ def calcLookupTables(npy_file, *args):
     lookup_alpha = {E: {} for E in energies}
     for Z in Z_arr:
         for E in energies:
-            b = np.load("/Users/peter/Work/radiography/data/b%sMeV_10.npy" % E)
+            b = np.load("/Users/peter/Work/radiography/data/phi_%sMeV_10.3.npy" % E)
             lmbda_arr = np.sort(np.array(list(lookupTables[E][Z].keys())))
             alpha_arr, sigma_arr = np.array([lookupTables[E][Z][lmbda] for lmbda in lmbda_arr]).T
 
             if Z <= 100:
-                lmbda_eff = np.array([calcLambdaEff(lmbda, thetaMax, Z, b, R, E_dep, attenMat, zRange) for lmbda in lmbda_arr])
+                lmbda_eff = np.array([calcLambdaEff(lmbda, theta, Z, b, D, mu_mat, zRange) for lmbda in lmbda_arr])
             else:
                 Z_arr = compound_Z[Z]
                 f_arr = compound_f[Z]
-                lmbda_eff = np.array([calcCompoundLambdaEff(lmbda, thetaMax, Z_arr, f_arr, b, R, E_dep, attenMat, zRange) for lmbda in lmbda_arr])
+                lmbda_eff = np.array([calcCompoundLambdaEff(lmbda, theta, Z_arr, f_arr, b, D, mu_mat, zRange) for lmbda in lmbda_arr])
 
             lookup_alpha[E][Z] = (lmbda_eff, alpha_arr, sigma_arr)
 
@@ -117,87 +117,82 @@ def extractFromTables(lookup_alpha, H, L):
     Z_arr = np.concatenate(Z_arr)
     return Z_arr, Z_vals, Z_compound, alpha_H_arr, alpha_L_arr, sigma_H_arr, sigma_L_arr, lmbda_H_arr, lmbda_L_arr
 
-def calcAttenMat_tot(E_g, zRange):
+def calcMu_tot(E, zRange):
     """
-    Returns a mass attenuation coefficient matrix, where element (i, j) is the mass
-    attenuation coefficient of element with energy E_g[i] and atomic number zRange[j]
+    Returns a mass muuation coefficient matrix, where element (i, j) is the mass
+    muuation coefficient of element with energy E[i] and atomic number zRange[j]
     """
     n = zRange.size
-    attenMat = np.zeros((E_g.size, n))
+    mu_mat = np.zeros((E.size, n))
     for i in range(n):
         Z = zRange[i]
-        atten = mu_tot(E_g, Z)
-        attenMat[:,i] = atten
-    return attenMat
+        mu_mat[:,i] = mu_tot(E, Z)
+    return mu_mat
 
-def calcAttenMat_PE(E_g, zRange):
+def calcMu_PE(E, zRange):
     n = zRange.size
-    attenMat_PE = np.zeros((E_g.size, n))
+    mu_mat_PE = np.zeros((E.size, n))
     for i in range(n):
         Z = zRange[i]
-        atten = mu_PE(E_g, Z)
-        attenMat_PE[:,i] = atten
-    return attenMat_PE
+        mu_mat_PE[:,i] = mu_PE(E, Z)
+    return mu_mat_PE
 
-def calcAttenMat_CS(E_g, zRange):
+def calcMu_CS(E, zRange):
     n = zRange.size
-    attenMat_CS = np.zeros((E_g.size, n))
+    mu_mat_CS = np.zeros((E.size, n))
     for i in range(n):
         Z = zRange[i]
-        atten = mu_CS(E_g, Z)
-        attenMat_CS[:,i] = atten
-    return attenMat_CS
+        mu_mat_CS[:,i] = mu_CS(E, Z)
+    return mu_mat_CS
 
-def calcAttenMat_PP(E_g, zRange):
+def calcMu_PP(E, zRange):
     n = zRange.size
-    attenMat_PP = np.zeros((E_g.size, n))
+    mu_mat_PP = np.zeros((E.size, n))
     for i in range(n):
         Z = zRange[i]
-        atten = mu_PP(E_g, Z)
-        attenMat_PP[:,i] = atten
-    return attenMat_PP
+        mu_mat_PP[:,i] = mu_PP(E, Z)
+    return mu_mat_PP
 
-def calcAlpha(lmbda, Z, b, R, E_dep, attenMat, zRange):
+def calcAlpha(lmbda, Z, phi, D, mu_mat, zRange):
     """Calculate alpha for a given array of materials and thicknesses"""
-    qb = R.T @ E_dep * b
-    d = np.sum(qb)
-    atten = attenMat[:,Z - zRange[0]]
-    m0 = np.exp(-atten * lmbda)
-    d0 = qb @ m0
+    D_phi = D * phi
+    d = np.sum(D_phi)
+    mu = mu_mat[:,Z - zRange[0]]
+    m0 = np.exp(-mu * lmbda)
+    d0 = D_phi @ m0
     alpha = np.log(d / d0)
     return alpha
 
-def calcCompoundAlpha(lmbda_arr, Z_arr, b, R, E_dep, attenMat, zRange):
+def calcCompoundAlpha(lmbda_arr, Z_arr, phi, D, mu_mat, zRange):
     """Calculate alpha for a given compound material"""  
-    qb = R.T @ E_dep * b
-    d = np.sum(qb)
-    atten = attenMat[:,Z_arr - zRange[0]]
-    m0 = np.exp(-np.sum(atten * lmbda_arr, axis=1))
-    d0 = qb @ m0
+    D_phi = D * phi
+    d = np.sum(D_phi)
+    mu = mu_mat[:,Z_arr - zRange[0]]
+    m0 = np.exp(-np.sum(mu * lmbda_arr, axis=1))
+    d0 = D_phi @ m0
     alpha = np.log(d / d0)
     return alpha
 
-def lookup(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange):
+def lookup(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
     """Calculate alpha and its derivatives for a given material and array of thicknesses"""
-    q = R.T @ E_dep
-    qb_H = q * b_H
-    qb_L = q * b_L
-    d_H = np.dot(q, b_H)
-    d_L = np.dot(q, b_L)
-    atten_H = attenMat_H[:,Z - zRange[0]]
-    atten_L = attenMat_L[:,Z - zRange[0]]
-    m0_H = np.exp(-np.outer(atten_H, lmbda))
-    m1_H = -atten_H[:,None] * m0_H
-    m2_H = -atten_H[:,None] * m1_H
-    m0_L = np.exp(-np.outer(atten_L, lmbda))
-    m1_L = -atten_L[:,None] * m0_L
-    m2_L = -atten_L[:,None] * m1_L
-    d_H0 = qb_H @ m0_H
-    d_L0 = qb_L @ m0_L
-    d_H1 = qb_H @ m1_H
-    d_L1 = qb_L @ m1_L
-    d_H2 = qb_H @ m2_H
-    d_L2 = qb_L @ m2_L
+    D_phi_H = D * phi_H
+    D_phi_L = D * phi_L
+    d_H = np.dot(D, phi_H)
+    d_L = np.dot(D, phi_L)
+    mu_H = mu_mat_H[:,Z - zRange[0]]
+    mu_L = mu_mat_L[:,Z - zRange[0]]
+    m0_H = np.exp(-np.outer(mu_H, lmbda))
+    m1_H = -mu_H[:,None] * m0_H
+    m2_H = -mu_H[:,None] * m1_H
+    m0_L = np.exp(-np.outer(mu_L, lmbda))
+    m1_L = -mu_L[:,None] * m0_L
+    m2_L = -mu_L[:,None] * m1_L
+    d_H0 = D_phi_H @ m0_H
+    d_L0 = D_phi_L @ m0_L
+    d_H1 = D_phi_H @ m1_H
+    d_L1 = D_phi_L @ m1_L
+    d_H2 = D_phi_H @ m2_H
+    d_L2 = D_phi_L @ m2_L
     alpha_H0 = np.log(d_H / d_H0)
     alpha_L0 = np.log(d_L / d_L0)
     alpha_H1 = -d_H1 / d_H0
@@ -206,7 +201,7 @@ def lookup(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange):
     alpha_L2 = (d_L1**2 - d_L0 * d_L2) / d_L0**2
     return alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2
 
-def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange):
+def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
     """For a list of alpha_H, alpha_L values, finds the theoretical Z which best reproduces the list"""
     b = zRange.size
     loss_arr = np.zeros(b)
@@ -220,7 +215,7 @@ def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zR
         else:
             nsteps = 2  
         for _ in range(nsteps):
-            alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookup(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange)
+            alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookup(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange)
             diff_H = alpha_H0 - alpha_H
             diff_L = alpha_L0 - alpha_L
 
@@ -228,7 +223,7 @@ def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zR
             hess = diff_H * alpha_H2 + alpha_H1**2 + diff_L * alpha_L2 + alpha_L1**2
             lmbda = lmbda - grad / hess
 
-        alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookup(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange)
+        alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookup(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange)
         loss_vec = (alpha_H0 - alpha_H)**2 + (alpha_L0 - alpha_L)**2
         loss_arr[i] = np.mean(loss_vec)
     
@@ -244,34 +239,33 @@ def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zR
 
 ### Test debug
 
-# def lookupFrac(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange):
+# def lookupFrac(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
 #     """Calculate alpha and its derivatives for a given material and array of thicknesses"""
-#     q = R.T @ E_dep
-#     qb_H = q * b_H
-#     qb_L = q * b_L
-#     d_H = np.dot(q, b_H)
-#     d_L = np.dot(q, b_L)
+#     D_phi_H = D * phi_H
+#     D_phi_L = D * phi_L
+#     d_H = np.dot(D, phi_H)
+#     d_L = np.dot(D, phi_L)
 #     Z_floor = np.floor(Z).astype(int)
 #     Z_ceil = np.ceil(Z).astype(int)
 #     f = Z_ceil - Z
-#     atten_H_floor = attenMat_H[:,Z_floor - zRange[0]]
-#     atten_H_ceil = attenMat_H[:,Z_ceil - zRange[0]]
-#     atten_H = f * atten_H_floor + (1 - f) * atten_H_ceil
-#     atten_L_floor = attenMat_L[:,Z_floor - zRange[0]]
-#     atten_L_ceil = attenMat_L[:,Z_ceil - zRange[0]]
-#     atten_L = f * atten_L_floor + (1 - f) * atten_L_ceil
-#     m0_H = np.exp(-np.outer(atten_H, lmbda))
-#     m1_H = -atten_H[:,None] * m0_H
-#     m2_H = -atten_H[:,None] * m1_H
-#     m0_L = np.exp(-np.outer(atten_L, lmbda))
-#     m1_L = -atten_L[:,None] * m0_L
-#     m2_L = -atten_L[:,None] * m1_L
-#     d_H0 = qb_H @ m0_H
-#     d_L0 = qb_L @ m0_L
-#     d_H1 = qb_H @ m1_H
-#     d_L1 = qb_L @ m1_L
-#     d_H2 = qb_H @ m2_H
-#     d_L2 = qb_L @ m2_L
+#     mu_H_floor = mu_mat_H[:,Z_floor - zRange[0]]
+#     mu_H_ceil = mu_mat_H[:,Z_ceil - zRange[0]]
+#     mu_H = f * mu_H_floor + (1 - f) * mu_H_ceil
+#     mu_L_floor = mu_mat_L[:,Z_floor - zRange[0]]
+#     mu_L_ceil = mu_mat_L[:,Z_ceil - zRange[0]]
+#     mu_L = f * mu_L_floor + (1 - f) * mu_L_ceil
+#     m0_H = np.exp(-np.outer(mu_H, lmbda))
+#     m1_H = -mu_H[:,None] * m0_H
+#     m2_H = -mu_H[:,None] * m1_H
+#     m0_L = np.exp(-np.outer(mu_L, lmbda))
+#     m1_L = -mu_L[:,None] * m0_L
+#     m2_L = -mu_L[:,None] * m1_L
+#     d_H0 = D_phi_H @ m0_H
+#     d_L0 = D_phi_L @ m0_L
+#     d_H1 = D_phi_H @ m1_H
+#     d_L1 = D_phi_L @ m1_L
+#     d_H2 = D_phi_H @ m2_H
+#     d_L2 = D_phi_L @ m2_L
 #     alpha_H0 = np.log(d_H / d_H0)
 #     alpha_L0 = np.log(d_L / d_L0)
 #     alpha_H1 = -d_H1 / d_H0
@@ -280,7 +274,7 @@ def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zR
 #     alpha_L2 = (d_L1**2 - d_L0 * d_L2) / d_L0**2
 #     return alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2
 
-# def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange):
+# def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
 #     """For a list of alpha_H, alpha_L values, finds the theoretical Z which best reproduces the list"""
 #     zRangeFrac = np.linspace(zRange[0], zRange[-1], 10*(zRange.size-1) + 1)
 #     b = zRangeFrac.size
@@ -293,7 +287,7 @@ def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zR
 #         else:
 #             nsteps = 1
 #         for _ in range(nsteps):
-#             alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookupFrac(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange)
+#             alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookupFrac(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange)
 #             diff_H = alpha_H0 - alpha_H
 #             diff_L = alpha_L0 - alpha_L
 
@@ -301,80 +295,78 @@ def fitToTheory(alpha_H, alpha_L, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zR
 #             hess = diff_H * alpha_H2 + alpha_H1**2 + diff_L * alpha_L2 + alpha_L1**2
 #             lmbda = lmbda - grad / hess
 
-#         alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookupFrac(lmbda, Z, b_H, b_L, R, E_dep, attenMat_H, attenMat_L, zRange)
+#         alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookupFrac(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange)
 #         loss_vec = (alpha_H0 - alpha_H)**2 + (alpha_L0 - alpha_L)**2
 #         loss_arr[i] = np.mean(loss_vec)
 
 #     idx = np.argmin(loss_arr)
 #     return zRangeFrac[idx], loss_arr[idx]
 
-# def calcAlphaFrac(lmbda, Z, b, R, E_dep, attenMat, zRange):
+# def calcAlphaFrac(lmbda, Z, phi, D, mu_mat, zRange):
 #     """Calculate alpha for a given array of materials and thicknesses"""
-#     qb = R.T @ E_dep * b
-#     d = np.sum(qb)
+#     D_phi = D * phi
+#     d = np.sum(D_phi)
 #     Z_floor = np.floor(Z).astype(int)
 #     Z_ceil = np.ceil(Z).astype(int)
 #     f = Z_ceil - Z
-#     atten_floor = attenMat[:,Z_floor - zRange[0]]
-#     atten_ceil = attenMat[:,Z_ceil - zRange[0]]
-#     atten = f * atten_floor + (1 - f) * atten_ceil
-#     m0 = np.exp(-atten * lmbda)
-#     d0 = qb @ m0
+#     mu_floor = mu_mat[:,Z_floor - zRange[0]]
+#     mu_ceil = mu_mat[:,Z_ceil - zRange[0]]
+#     mu = f * mu_floor + (1 - f) * mu_ceil
+#     m0 = np.exp(-mu * lmbda)
+#     d0 = D_phi @ m0
 #     alpha = np.log(d / d0)
 #     return alpha
 
 ###
 
-def calcLambdaEff(lmbda0, thetaMax, Z, b, R, E_dep, attenMat, zRange):
+def calcLambdaEff(lmbda0, theta, Z, b, D, mu_mat, zRange):
     """Finds the effective lambda which approximates the entire target"""
     def calcLogD0(lmbda):
-        m0 = np.exp(-atten * lmbda)
-        d0 = np.dot(q, m0 * b)
+        m0 = np.exp(-mu * lmbda)
+        d0 = np.dot(D, m0 * b)
         logD0 = np.log(d0)
         return logD0
         
-    atten = attenMat[:,Z - zRange[0]]
-    thetaRange = np.linspace(0, thetaMax, 1001)
+    mu = mu_mat[:,Z - zRange[0]]
+    thetaRange = np.linspace(0, theta, 1001)
     dtheta = thetaRange[1] - thetaRange[0]
     theta = 0.5*(thetaRange[1:] + thetaRange[:-1])
     lmbda = lmbda0 / np.cos(theta)
-    m = np.exp(-np.outer(atten, lmbda))
-    m0 = dtheta * np.sum(m, axis=1) / thetaMax
-    q = R.T @ E_dep
-    d0 = np.dot(q, m0 * b)
+    m = np.exp(-np.outer(mu, lmbda))
+    m0 = dtheta * np.sum(m, axis=1) / theta
+    d0 = np.dot(D, m0 * b)
     logD0 = np.log(d0)
     
     sol = root(lambda lmbdaEff: calcLogD0(lmbdaEff) - logD0, x0=lmbda0)
     assert sol.success
     return sol.x[0]
 
-def calcCompoundLambdaEff(lmbda0, thetaMax, Z_arr, f_arr, b, R, E_dep, attenMat, zRange):
+def calcCompoundLambdaEff(lmbda0, theta, Z_arr, f_arr, b, D, mu_mat, zRange):
     """Finds the effective lambda which approximates the entire compound target"""
     def calcLogD0(lmbda):
-        m0 = np.exp(-np.sum(atten * (lmbda * f_arr), axis=1))
-        d0 = np.dot(q, m0 * b)
+        m0 = np.exp(-np.sum(mu * (lmbda * f_arr), axis=1))
+        d0 = np.dot(D, m0 * b)
         logD0 = np.log(d0)
         return logD0
     
-    atten = attenMat[:,Z_arr - zRange[0]]
-    thetaRange = np.linspace(0, thetaMax, 1001)
+    mu = mu_mat[:,Z_arr - zRange[0]]
+    thetaRange = np.linspace(0, theta, 1001)
     dtheta = thetaRange[1] - thetaRange[0]
     theta = 0.5*(thetaRange[1:] + thetaRange[:-1])
-    A = np.sum(atten * lmbda0 * f_arr, axis=1)
+    A = np.sum(mu * lmbda0 * f_arr, axis=1)
     m = np.exp(-np.outer(A, 1/np.cos(theta)))
-    m0 = dtheta * np.sum(m, axis=1) / thetaMax
-    q = R.T @ E_dep
-    d0 = np.dot(q, m0 * b)
+    m0 = dtheta * np.sum(m, axis=1) / theta
+    d0 = np.dot(D, m0 * b)
     logD0 = np.log(d0)
     
     sol = root(lambda lmbdaEff: calcLogD0(lmbdaEff) - logD0, x0=lmbda0)
     assert sol.success
     return sol.x[0]
 
-def calcBias(alpha, sigma, lmbda, Z, b, R, E_dep, attenMat, zRange):
+def calcBias(alpha, sigma, lmbda, Z, phi, D, mu_mat, zRange):
     """Finds the bias term such that chi-squared equals one"""
     def calcChiSquared(bias):
-        alpha0 = calcAlpha(lmbda, Z, b, R, E_dep, attenMat, zRange)
+        alpha0 = calcAlpha(lmbda, Z, phi, D, mu_mat, zRange)
         chi2_vec = (alpha0 - alpha)**2 / (sigma**2 + bias**2)
         return np.mean(chi2_vec)
 
@@ -382,18 +374,18 @@ def calcBias(alpha, sigma, lmbda, Z, b, R, E_dep, attenMat, zRange):
     assert sol.success
     return np.abs(sol.x)
 
-def fitSemiempirical(alpha, lmbda, Z, b, R, E_dep, attenMat_tot, attenMat_PE, attenMat_CS, attenMat_PP, zRange):
+def fitSemiempirical(alpha, lmbda, Z, phi, D, mu_mat_tot, mu_mat_PE, mu_mat_CS, mu_mat_PP, zRange):
     """For a list of alpha values, finds best 'a', 'b', and 'c' coefficient to reproduce 
     the given lambda and Z values"""
     def calcLoss(x):
-        attenMat = attenMat_tot + (x[0]-1)*attenMat_PE + (x[1]-1)*attenMat_CS + (x[2]-1)*attenMat_PP
-        alpha0 = calcAlpha(lmbda, Z, b, R, E_dep, attenMat, zRange)
+        mu_mat = mu_mat_tot + (x[0]-1)*mu_mat_PE + (x[1]-1)*mu_mat_CS + (x[2]-1)*mu_mat_PP
+        alpha0 = calcAlpha(lmbda, Z, phi, D, mu_mat, zRange)
         loss_vec = (alpha0 - alpha)**2
         return np.mean(loss_vec)
     
     res = minimize(calcLoss, x0=(1, 1, 1))
     assert res.success
-    a0, b0, c0 = res.x
+    a, b, c = res.x
     loss = res.fun
-    print("Minimum found at a = %.4f, b=%.4f, c=%.4f with a loss of %.3e" % (a0, b0, c0, loss))
-    return a0, b0, c0
+    print("Minimum found at a = %.4f, b=%.4f, c=%.4f with a loss of %.3e" % (a, b, c, loss))
+    return a, b, c
