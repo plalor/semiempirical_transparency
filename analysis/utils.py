@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize, root
 from time import perf_counter as time
-from XCOM import mu_tot, mu_PE, mu_CS, mu_PP
+from XCOM import mu_tot, mu_PE, mu_CS, mu_PP, mu_en
 import os
 import re
 
@@ -67,16 +67,16 @@ def calcLookupTables(npy_file, *args):
     lookup_alpha = {E: {} for E in energies}
     for Z in Z_arr:
         for E in energies:
-            b = np.load("/Users/peter/Work/radiography/data/phi_%sMeV_10.3.npy" % E)
+            phi = np.load("/Users/peter/Work/radiography/data/phi_%sMeV_10.3.npy" % E)
             lmbda_arr = np.sort(np.array(list(lookupTables[E][Z].keys())))
             alpha_arr, sigma_arr = np.array([lookupTables[E][Z][lmbda] for lmbda in lmbda_arr]).T
 
             if Z <= 100:
-                lmbda_eff = np.array([calcLambdaEff(lmbda, theta, Z, b, D, mu_mat, zRange) for lmbda in lmbda_arr])
+                lmbda_eff = np.array([calcLambdaEff(lmbda, theta, Z, phi, D, mu_mat, zRange) for lmbda in lmbda_arr])
             else:
                 Z_arr = compound_Z[Z]
                 f_arr = compound_f[Z]
-                lmbda_eff = np.array([calcCompoundLambdaEff(lmbda, theta, Z_arr, f_arr, b, D, mu_mat, zRange) for lmbda in lmbda_arr])
+                lmbda_eff = np.array([calcCompoundLambdaEff(lmbda, theta, Z_arr, f_arr, phi, D, mu_mat, zRange) for lmbda in lmbda_arr])
 
             lookup_alpha[E][Z] = (lmbda_eff, alpha_arr, sigma_arr)
 
@@ -237,7 +237,7 @@ def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
         idx = np.delete(idx, np.argmax(loss_arr[idx]))
     return zRange[idx], loss_arr[idx]
 
-### Test debug
+### non-integer atomic numbers
 
 # def lookupFrac(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
 #     """Calculate alpha and its derivatives for a given material and array of thicknesses"""
@@ -274,7 +274,22 @@ def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
 #     alpha_L2 = (d_L1**2 - d_L0 * d_L2) / d_L0**2
 #     return alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2
 
-# def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
+# def calcAlphaFrac(lmbda, Z, phi, D, mu_mat, zRange):
+#     """Calculate alpha for a given array of materials and thicknesses"""
+#     D_phi = D * phi
+#     d = np.sum(D_phi)
+#     Z_floor = np.floor(Z).astype(int)
+#     Z_ceil = np.ceil(Z).astype(int)
+#     f = Z_ceil - Z
+#     mu_floor = mu_mat[:,Z_floor - zRange[0]]
+#     mu_ceil = mu_mat[:,Z_ceil - zRange[0]]
+#     mu = f * mu_floor + (1 - f) * mu_ceil
+#     m0 = np.exp(-mu * lmbda)
+#     d0 = D_phi @ m0
+#     alpha = np.log(d / d0)
+#     return alpha
+
+# def fitToTheoryFrac(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
 #     """For a list of alpha_H, alpha_L values, finds the theoretical Z which best reproduces the list"""
 #     zRangeFrac = np.linspace(zRange[0], zRange[-1], 10*(zRange.size-1) + 1)
 #     b = zRangeFrac.size
@@ -299,64 +314,56 @@ def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, zRange):
 #         loss_vec = (alpha_H0 - alpha_H)**2 + (alpha_L0 - alpha_L)**2
 #         loss_arr[i] = np.mean(loss_vec)
 
-#     idx = np.argmin(loss_arr)
+#     loss_pad = np.pad(loss_arr, 1, constant_values = np.inf)
+#     left = loss_pad[:-2]
+#     right = loss_pad[2:]
+#     optima = (left > loss_arr) & (right > loss_arr)
+#     thresh = loss_arr < 3*np.min(loss_arr)
+#     idx = np.argwhere(optima & thresh).flatten()
+#     while idx.size > 2:
+#         idx = np.delete(idx, np.argmax(loss_arr[idx]))
 #     return zRangeFrac[idx], loss_arr[idx]
-
-# def calcAlphaFrac(lmbda, Z, phi, D, mu_mat, zRange):
-#     """Calculate alpha for a given array of materials and thicknesses"""
-#     D_phi = D * phi
-#     d = np.sum(D_phi)
-#     Z_floor = np.floor(Z).astype(int)
-#     Z_ceil = np.ceil(Z).astype(int)
-#     f = Z_ceil - Z
-#     mu_floor = mu_mat[:,Z_floor - zRange[0]]
-#     mu_ceil = mu_mat[:,Z_ceil - zRange[0]]
-#     mu = f * mu_floor + (1 - f) * mu_ceil
-#     m0 = np.exp(-mu * lmbda)
-#     d0 = D_phi @ m0
-#     alpha = np.log(d / d0)
-#     return alpha
 
 ###
 
-def calcLambdaEff(lmbda0, theta, Z, b, D, mu_mat, zRange):
+def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, zRange):
     """Finds the effective lambda which approximates the entire target"""
     def calcLogD0(lmbda):
         m0 = np.exp(-mu * lmbda)
-        d0 = np.dot(D, m0 * b)
+        d0 = np.dot(D, m0 * phi)
         logD0 = np.log(d0)
         return logD0
         
     mu = mu_mat[:,Z - zRange[0]]
-    thetaRange = np.linspace(0, theta, 1001)
+    thetaRange = np.linspace(0, theta0, 1001)
     dtheta = thetaRange[1] - thetaRange[0]
     theta = 0.5*(thetaRange[1:] + thetaRange[:-1])
     lmbda = lmbda0 / np.cos(theta)
     m = np.exp(-np.outer(mu, lmbda))
-    m0 = dtheta * np.sum(m, axis=1) / theta
-    d0 = np.dot(D, m0 * b)
+    m0 = dtheta * np.sum(m, axis=1) / theta0
+    d0 = np.dot(D, m0 * phi)
     logD0 = np.log(d0)
     
     sol = root(lambda lmbdaEff: calcLogD0(lmbdaEff) - logD0, x0=lmbda0)
     assert sol.success
     return sol.x[0]
 
-def calcCompoundLambdaEff(lmbda0, theta, Z_arr, f_arr, b, D, mu_mat, zRange):
+def calcCompoundLambdaEff(lmbda0, theta0, Z_arr, f_arr, phi, D, mu_mat, zRange):
     """Finds the effective lambda which approximates the entire compound target"""
     def calcLogD0(lmbda):
         m0 = np.exp(-np.sum(mu * (lmbda * f_arr), axis=1))
-        d0 = np.dot(D, m0 * b)
+        d0 = np.dot(D, m0 * phi)
         logD0 = np.log(d0)
         return logD0
     
     mu = mu_mat[:,Z_arr - zRange[0]]
-    thetaRange = np.linspace(0, theta, 1001)
+    thetaRange = np.linspace(0, theta0, 1001)
     dtheta = thetaRange[1] - thetaRange[0]
     theta = 0.5*(thetaRange[1:] + thetaRange[:-1])
     A = np.sum(mu * lmbda0 * f_arr, axis=1)
     m = np.exp(-np.outer(A, 1/np.cos(theta)))
-    m0 = dtheta * np.sum(m, axis=1) / theta
-    d0 = np.dot(D, m0 * b)
+    m0 = dtheta * np.sum(m, axis=1) / theta0
+    d0 = np.dot(D, m0 * phi)
     logD0 = np.log(d0)
     
     sol = root(lambda lmbdaEff: calcLogD0(lmbdaEff) - logD0, x0=lmbda0)
@@ -389,3 +396,28 @@ def fitSemiempirical(alpha, lmbda, Z, phi, D, mu_mat_tot, mu_mat_PE, mu_mat_CS, 
     loss = res.fun
     print("Minimum found at a = %.4f, b=%.4f, c=%.4f with a loss of %.3e" % (a, b, c, loss))
     return a, b, c
+
+def piecewiseLinear(E, x, y, z, E0, E1):
+    """Fitting the detector response to a piecewise linear function
+    >>> popt, pcov = curve_fit(piecewiseLinear, E, D, p0 = (1, 0.3, 0.35, 0.25, 3))
+    >>> D_twiddle = piecewiseLinear(E, *popt)"""
+    D0 = x*E
+    D1 = x*E0 + y*(E - E0)
+    D2 = x*E0 + y*(E1 - E0) + z*(E - E1)
+    mask = np.ones_like(E, dtype=int)
+    mask[E < E0] = 0
+    mask[E > E1] = 2
+    D = np.choose(mask, (D0, D1, D2))
+    return D
+
+def approxDetectorResponse(E):
+    rho = 7.9 # g/cm^3
+    x = 3     # cm
+    lmbda = rho * x
+    Z_CdWO4 = np.array([8, 48, 74])
+    w_CdWO4 = np.array([0.177644, 0.312027, 0.510329])
+    mu_massAtten = np.sum(mu_tot(E, Z_CdWO4) * w_CdWO4[:,None], axis=0)
+    mu_energyAbsorp = np.sum(mu_en(E, Z_CdWO4) * w_CdWO4[:,None], axis=0)
+    D = E * (1 - np.exp(-mu_massAtten * lmbda)) * (mu_energyAbsorp / mu_massAtten)
+    return D
+    
