@@ -67,7 +67,7 @@ def calcLookupTables(npy_file, *args):
     lookup_alpha = {E: {} for E in energies}
     for Z in Z_arr:
         for E in energies:
-            phi = np.load("/Users/peter/Work/radiography/data/phi_%sMeV_10.3.npy" % E)
+            phi = np.load("/Users/peter/Work/radiography/data/phi_%sMeV_10.npy" % E)
             lmbda_arr = np.sort(np.array(list(lookupTables[E][Z].keys())))
             alpha_arr, sigma_arr = np.array([lookupTables[E][Z][lmbda] for lmbda in lmbda_arr]).T
 
@@ -394,21 +394,8 @@ def fitSemiempirical(alpha, lmbda, Z, phi, D, mu_mat_tot, mu_mat_PE, mu_mat_CS, 
     assert res.success
     a, b, c = res.x
     loss = res.fun
-    print("Minimum found at a = %.4f, b=%.4f, c=%.4f with a loss of %.3e" % (a, b, c, loss))
+    print("Minimum found at a = %.4f, b = %.4f, c = %.4f with a loss of %.3e" % (a, b, c, loss))
     return a, b, c
-
-def piecewiseLinear(E, x, y, z, E0, E1):
-    """Fitting the detector response to a piecewise linear function
-    >>> popt, pcov = curve_fit(piecewiseLinear, E, D, p0 = (1, 0.3, 0.35, 0.25, 3))
-    >>> D_twiddle = piecewiseLinear(E, *popt)"""
-    D0 = x*E
-    D1 = x*E0 + y*(E - E0)
-    D2 = x*E0 + y*(E1 - E0) + z*(E - E1)
-    mask = np.ones_like(E, dtype=int)
-    mask[E < E0] = 0
-    mask[E > E1] = 2
-    D = np.choose(mask, (D0, D1, D2))
-    return D
 
 def approxDetectorResponse(E):
     rho = 7.9 # g/cm^3

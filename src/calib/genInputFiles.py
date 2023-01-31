@@ -13,10 +13,10 @@ xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/radiography/data/"
-D = np.load(path + "D_10.3.npy")
-D2 = np.load(path + "D2_10.3.npy")
-E = np.load(path + "E_10.3.npy")
-phi_4 = np.load(path + "phi_4MeV_10.3.npy")
+D = np.load(path + "D_10.npy")
+D2 = np.load(path + "D2_10.npy")
+E = np.load(path + "E_10.npy")
+phi_4 = np.load(path + "phi_4MeV_10.npy")
 
 def calcRelError(lmbda, Z, phi):
     mu = mu_tot(E, Z)
@@ -33,8 +33,8 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 ### Creating files
 
-for E0 in ["10.3", "5.5"]:
-    phi = np.load(path + "phi_%sMeV_10.3.npy" % E0)
+for E0 in ["10", "6", "4"]:
+    phi = np.load(path + "phi_%sMeV_10.npy" % E0)
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:

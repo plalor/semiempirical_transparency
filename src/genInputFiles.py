@@ -3,7 +3,8 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
+#zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
+zRange = np.array([104, 105, 106, 107])
 n_lmbda = 31      # size of lambda mesh
 lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
@@ -15,10 +16,10 @@ xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 ### Loading files to approximate the appropriate number of MC particles to run
 
 path = "/Users/peter/Work/radiography/data/"
-D = np.load(path + "D_10.3.npy")
-D2 = np.load(path + "D2_10.3.npy")
-E = np.load(path + "E_10.3.npy")
-phi_4 = np.load(path + "phi_4MeV_10.3.npy")
+D = np.load(path + "D_10.npy")
+D2 = np.load(path + "D2_10.npy")
+E = np.load(path + "E_10.npy")
+phi_4 = np.load(path + "phi_4MeV_10.npy")
 
 def calcRelError(lmbda_arr, Z_arr, phi):
     phi0 = phi.copy()
@@ -54,10 +55,26 @@ materials[103] = "G4_URANIUM_OXIDE"
 compound_Z[103] = np.array([8, 92])
 compound_f[103] = np.array([0.118502, 0.881498])
 
+materials[104] = "G4_ALUMINUM_OXIDE"
+compound_Z[104] = np.array([8, 13])
+compound_f[104] = np.array([0.470749, 0.529251])
+
+materials[105] = "G4_LITHIUM_IODIDE"
+compound_Z[105] = np.array([3, 53])
+compound_f[105] = np.array([0.051858, 0.948142])
+
+materials[106] = "G4_CADMIUM_TUNGSTATE"
+compound_Z[106] = np.array([8, 48, 74])
+compound_f[106] = np.array([0.177644, 0.312027, 0.510329])
+
+materials[107] = "G4_GLASS_LEAD"
+compound_Z[107] = np.array([8, 14, 22, 33, 82])
+compound_f[107] = np.array([0.156453, 0.080866, 0.008092, 0.002651, 0.751938])
+
 ### Creating files
 
-for E0 in ["10.3", "5.5"]:
-    phi = np.load(path + "phi_%sMeV_10.3.npy" % E0)
+for E0 in ["10", "6", "4"]:
+    phi = np.load(path + "phi_%sMeV_10.npy" % E0)
     for Z in zRange:
         material = materials[Z]
         for lmbda in lmbdaRange:
