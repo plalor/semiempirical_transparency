@@ -86,7 +86,7 @@ for E0 in ["10", "6", "4"]:
             if calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
                 continue
             if (Z == 1 or Z == 101) and 1.4*calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
-                continue ### hydrogen takes forever
+                continue ### hydrogen is slow
                     
             error = calcRelError(lmbda_arr, Z_arr, phi)
             N = int(N0 + (error / max_error)**2)
