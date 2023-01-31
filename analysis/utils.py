@@ -407,4 +407,3 @@ def approxDetectorResponse(E):
     mu_energyAbsorp = np.sum(mu_en(E, Z_CdWO4) * w_CdWO4[:,None], axis=0)
     D = E * (1 - np.exp(-mu_massAtten * lmbda)) * (mu_energyAbsorp / mu_massAtten)
     return D
-    

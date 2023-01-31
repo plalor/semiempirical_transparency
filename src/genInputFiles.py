@@ -46,29 +46,29 @@ materials[101] = "G4_POLYETHYLENE"
 compound_Z[101] = np.array([1, 6])
 compound_f[101] = np.array([0.143711, 0.856289])
 
-materials[102] = "G4_SILVER_CHLORIDE"
-compound_Z[102] = np.array([17, 47])
-compound_f[102] = np.array([0.247368, 0.752632])
+materials[102] = "G4_ALUMINUM_OXIDE"
+compound_Z[102] = np.array([8, 13])
+compound_f[102] = np.array([0.470749, 0.529251])
 
-materials[103] = "G4_URANIUM_OXIDE"
-compound_Z[103] = np.array([8, 92])
-compound_f[103] = np.array([0.118502, 0.881498])
+materials[103] = "G4_SILVER_CHLORIDE"
+compound_Z[103] = np.array([17, 47])
+compound_f[103] = np.array([0.247368, 0.752632])
 
-materials[104] = "G4_ALUMINUM_OXIDE"
-compound_Z[104] = np.array([8, 13])
-compound_f[104] = np.array([0.470749, 0.529251])
+materials[104] = "G4_LITHIUM_IODIDE"
+compound_Z[104] = np.array([3, 53])
+compound_f[104] = np.array([0.051858, 0.948142])
 
-materials[105] = "G4_LITHIUM_IODIDE"
-compound_Z[105] = np.array([3, 53])
-compound_f[105] = np.array([0.051858, 0.948142])
+materials[105] = "G4_CADMIUM_TUNGSTATE"
+compound_Z[105] = np.array([8, 48, 74])
+compound_f[105] = np.array([0.177644, 0.312027, 0.510329])
 
-materials[106] = "G4_CADMIUM_TUNGSTATE"
-compound_Z[106] = np.array([8, 48, 74])
-compound_f[106] = np.array([0.177644, 0.312027, 0.510329])
+materials[106] = "G4_GLASS_LEAD"
+compound_Z[106] = np.array([8, 14, 22, 33, 82])
+compound_f[106] = np.array([0.156453, 0.080866, 0.008092, 0.002651, 0.751938])
 
-materials[107] = "G4_GLASS_LEAD"
-compound_Z[107] = np.array([8, 14, 22, 33, 82])
-compound_f[107] = np.array([0.156453, 0.080866, 0.008092, 0.002651, 0.751938])
+materials[107] = "G4_URANIUM_OXIDE"
+compound_Z[107] = np.array([8, 92])
+compound_f[107] = np.array([0.118502, 0.881498])
 
 ### Creating files
 
