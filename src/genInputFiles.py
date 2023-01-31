@@ -3,13 +3,12 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-#zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103])  # different elements to test
-zRange = np.array([104, 105, 106, 107])
+zRange = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103, 104, 105, 106, 107])  # different elements to test
 n_lmbda = 31      # size of lambda mesh
 lmbdaMax = 300    # maximum value of lambda
 N0 = 1e6          # thin target num_particles
 N1 = 2e9          # thick target num_particles
-max_error = 6e-4
+max_error = 8e-4
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
@@ -86,6 +85,8 @@ for E0 in ["10", "6", "4"]:
                 Z_arr = [Z]
             if calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
                 continue
+            if (Z == 1 or Z == 101) and 1.4*calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
+                continue ### hydrogen takes forever
                     
             error = calcRelError(lmbda_arr, Z_arr, phi)
             N = int(N0 + (error / max_error)**2)

@@ -4,9 +4,9 @@ from XCOM import mu_tot
 ### File Input Parameters
 
 zRange = np.array([6, 26, 82])
-lmbdaRange = np.array([50, 100, 150])
+lmbdaRange = np.array([150])
 num_jobs = 20
-max_error = 4e-5
+max_error = 5e-5
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
