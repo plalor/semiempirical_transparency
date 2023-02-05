@@ -3,10 +3,11 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-zRange = np.array([6, 26, 82])
-lmbdaRange = np.array([150])
+Z_range = np.array([6, 26, 82])
+E_range = ["10", "6", "4"]
+lmbda_range = np.array([150])
 num_jobs = 20
-max_error = 5e-5
+max_error = 3e-5
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
@@ -33,11 +34,11 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 ### Creating files
 
-for E0 in ["10", "6", "4"]:
+for E0 in E_range:
     phi = np.load(path + "phi_%sMeV_10.npy" % E0)
-    for Z in zRange:
+    for Z in Z_range:
         material = materials[Z]
-        for lmbda in lmbdaRange:
+        for lmbda in lmbda_range:
             error = calcRelError(lmbda, Z, phi)
             N = int((error / max_error)**2 / num_jobs)
             
