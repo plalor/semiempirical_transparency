@@ -122,35 +122,28 @@ def calcMu_tot(E, Z_range):
     Returns a mass muuation coefficient matrix, where element (i, j) is the mass
     muuation coefficient of element with energy E[i] and atomic number Z_range[j]
     """
-    n = Z_range.size
-    mu_mat = np.zeros((E.size, n))
-    for i in range(n):
+    mu_mat = np.zeros((E.size, Z_range.size))
+    for i in range(Z_range.size):
         Z = Z_range[i]
         mu_mat[:,i] = mu_tot(E, Z)
     return mu_mat
 
 def calcMu_PE(E, Z_range):
-    n = Z_range.size
-    mu_mat_PE = np.zeros((E.size, n))
-    for i in range(n):
-        Z = Z_range[i]
-        mu_mat_PE[:,i] = mu_PE(E, Z)
+    mu_mat_PE = np.zeros((E.size, Z_range.size))
+    for i in range(Z_range.size):
+        mu_mat_PE[:,i] = mu_PE(E, Z_range[i])
     return mu_mat_PE
 
 def calcMu_CS(E, Z_range):
-    n = Z_range.size
-    mu_mat_CS = np.zeros((E.size, n))
-    for i in range(n):
-        Z = Z_range[i]
-        mu_mat_CS[:,i] = mu_CS(E, Z)
+    mu_mat_CS = np.zeros((E.size, Z_range.size))
+    for i in range(Z_range.size):
+        mu_mat_CS[:,i] = mu_CS(E, Z_range[i])
     return mu_mat_CS
 
 def calcMu_PP(E, Z_range):
-    n = Z_range.size
-    mu_mat_PP = np.zeros((E.size, n))
-    for i in range(n):
-        Z = Z_range[i]
-        mu_mat_PP[:,i] = mu_PP(E, Z)
+    mu_mat_PP = np.zeros((E.size, Z_range.size))
+    for i in range(Z_range.size):
+        mu_mat_PP[:,i] = mu_PP(E, Z_range[i])
     return mu_mat_PP
 
 def calcAlpha(lmbda, Z, phi, D, mu_mat, Z_range):
