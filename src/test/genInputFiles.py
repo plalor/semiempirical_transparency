@@ -3,11 +3,16 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-Z_range = np.array([6, 26, 82])
-E_range = ["10", "6", "4"]
-lmbda_range = np.array([150])
-num_jobs = 20
-#max_error = 3e-5
+#Z_range = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103, 104, 105, 106, 107])  # different elements to test
+Z_range = np.array([6, 13, 26, 55, 82, 92, 101])
+E_range = ["10", "6", "4"]  # bremmstrahlung energies
+#lmbda_spacing = 10  # lambda spacing between simulations
+lmbda_spacing = 20
+# N0 = 1e6            # thin target num_particles
+# N1 = 3e9            # thick target num_particles
+N0 = 1e3
+N1 = 1e5
+#max_error = 6.56e-4
 max_error = 1e-2
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
@@ -20,11 +25,14 @@ D2 = np.load(path + "D2_10.npy")
 E = np.load(path + "E_10.npy")
 phi_4 = np.load(path + "phi_4MeV_10.npy")
 
-def calcRelError(lmbda, Z, phi):
-    mu = mu_tot(E, Z)
-    m0 = np.exp(-mu * lmbda)
-    d0 = np.dot(D, m0 * phi)
-    sigma0 = np.sqrt(np.dot(D2, m0 * phi))
+def calcRelError(lmbda_arr, Z_arr, phi):
+    phi0 = phi.copy()
+    for lmbda, Z in zip(lmbda_arr, Z_arr):
+        mu = mu_tot(E, Z)
+        m0 = np.exp(-mu * lmbda)
+        phi0 *= m0
+    d0 = np.dot(D, phi0)
+    sigma0 = np.sqrt(np.dot(D2, phi0))
     return sigma0 / d0
 
 ### Defining materials files
@@ -33,15 +41,60 @@ material_name = ["G4_H", "G4_He", "G4_Li", "G4_Be", "G4_B", "G4_C", "G4_N", "G4_
 material_Z = np.arange(1, len(material_name)+1)
 materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
+# add compound materials with unique Z identifier materials
+compound_Z = {}
+compound_w = {}
+
+materials[101] = "G4_POLYETHYLENE"
+compound_Z[101] = np.array([1, 6])
+compound_w[101] = np.array([0.143711, 0.856289])
+
+materials[102] = "G4_ALUMINUM_OXIDE"
+compound_Z[102] = np.array([8, 13])
+compound_w[102] = np.array([0.470749, 0.529251])
+
+materials[103] = "G4_SILVER_CHLORIDE"
+compound_Z[103] = np.array([17, 47])
+compound_w[103] = np.array([0.247368, 0.752632])
+
+materials[104] = "G4_LITHIUM_IODIDE"
+compound_Z[104] = np.array([3, 53])
+compound_w[104] = np.array([0.051858, 0.948142])
+
+materials[105] = "G4_CADMIUM_TUNGSTATE"
+compound_Z[105] = np.array([8, 48, 74])
+compound_w[105] = np.array([0.177644, 0.312027, 0.510329])
+
+materials[106] = "G4_GLASS_LEAD"
+compound_Z[106] = np.array([8, 14, 22, 33, 82])
+compound_w[106] = np.array([0.156453, 0.080866, 0.008092, 0.002651, 0.751938])
+
+materials[107] = "G4_URANIUM_OXIDE"
+compound_Z[107] = np.array([8, 92])
+compound_w[107] = np.array([0.118502, 0.881498])
+
 ### Creating files
 
 for E0 in E_range:
     phi = np.load(path + "phi_%sMeV_10.npy" % E0)
     for Z in Z_range:
         material = materials[Z]
-        for lmbda in lmbda_range:
-            error = calcRelError(lmbda, Z, phi)
-            N = int((error / max_error)**2 / num_jobs)
+        lmbda = 0
+        while True:
+            lmbda += lmbda_spacing
+            if Z > 100:
+                lmbda_arr = lmbda * compound_w[Z]
+                Z_arr = compound_Z[Z]
+            else:
+                lmbda_arr = [lmbda]
+                Z_arr = [Z]
+            if calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
+                break
+            if (Z == 1 or Z == 101) and 1.4*calcRelError(lmbda_arr, Z_arr, phi_4)/np.sqrt(N1) > max_error:
+                break   ### hydrogen is slow
+                    
+            error = calcRelError(lmbda_arr, Z_arr, phi)
+            N = int(N0 + (error / max_error)**2)
             
             filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E0, lmbda, Z, N)
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>

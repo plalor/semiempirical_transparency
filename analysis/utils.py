@@ -1,87 +1,46 @@
 import numpy as np
 from scipy.optimize import minimize, root
-from time import perf_counter as time
 from XCOM import mu_tot, mu_PE, mu_CS, mu_PP, mu_en
+from time import perf_counter as time
 import os
 import re
 
-def calcEnergyDeposited(filename, N):
-    """Calculates the total energy deposited (and uncertainty) for filename"""
-    E_deposited = 0
-    sigma_deposited = 0
-    with open(filename) as f:
-        header = np.array(f.readline().split())
-        idx = np.argmax(header == "E_deposited(MeV)")
-        for line in f:
-            energy = float(line.split()[idx])
-            E_deposited += energy
-            sigma_deposited += energy**2
-    
-    E_deposited = E_deposited / N
-    sigma_deposited = np.sqrt(sigma_deposited) / N
-    return E_deposited, sigma_deposited
-
-def calcLookupTables(npy_file, *args):
-    """Computes lookup tables from a directory of .dat files"""
-    if len(args) == 0:
-        lookup_alpha = np.load(npy_file, allow_pickle='TRUE').item()
-        return lookup_alpha
-    elif len(args) == 8:
-        path, energies, theta, D, mu_mat, Z_range, compound_Z, compound_w = args
-    else:
-        path, energies, theta, D, mu_mat, Z_range = args
-    t0 = time()
-    print("Building lookup tables...")
+def calcLookupTables(path, datadir):
+    """Computes lookup tables from a directory of .npy files"""        
     E_openBeam = {}
     sigma_openBeam = {}
-    for filename in os.listdir(path):
-        if filename.endswith(".dat"):
-            E = re.search("E=(\d+\.?\d+|\d+)", filename)[1]
-            lmbda = int(re.search("lmbda=(\d+\.?\d+|\d+)", filename)[1])
-            if lmbda == 0 and E in energies:
-                N = int(re.search("N=(\d+)", filename)[1])
-                E_deposited, sigma_deposited = calcEnergyDeposited(path + filename, N)
-                E_openBeam[E] = E_deposited
-                sigma_openBeam[E] = sigma_deposited
+    for filename in os.listdir(path + "data/"):
+        if filename.endswith(".npy"):
+            data = np.load(path + "data/" + filename, allow_pickle='TRUE').item()
+            if data["lambda"] == 0:
+                E = data["E"]
+                E_openBeam[E] = data["E_deposited"]
+                sigma_openBeam[E] = data["sigma"]
 
+    energies = list(E_openBeam.keys())
     lookupTables = {E: {} for E in energies}
-    for filename in os.listdir(path):
-        if filename.endswith(".dat"):
-            E = re.search("E=(\d+\.?\d+|\d+)", filename)[1]
-            lmbda = int(re.search("lmbda=(\d+\.?\d+|\d+)", filename)[1])
-            if lmbda > 0 and E in energies:
-                N = int(re.search("N=(\d+)", filename)[1])
-                Z = int(re.search("Z=(\d+)", filename)[1])
-                if Z not in lookupTables[E].keys():
-                    lookupTables[E][Z] = {}
-                E_deposited, sigma_deposited = calcEnergyDeposited(path + filename, N)
-                if E_deposited == 0:
-                    print("zero energy deposited for (E, Z, lmbda) =", (E, Z, lmbda))
-                    E_deposited = 1e-10
-                    sigma_deposited = 1
-                alpha = -np.log(E_deposited / E_openBeam[E])
-                sigma = np.sqrt(sigma_deposited**2 / E_deposited**2 + sigma_openBeam[E]**2 / E_openBeam[E]**2)
-                lookupTables[E][Z][lmbda] = (alpha, sigma)
+    for filename in os.listdir(path + "data/" + datadir):
+        if filename.endswith(".npy"):
+            data = np.load(path + "data/" + datadir + filename, allow_pickle='TRUE').item()
+            E = data["E"]
+            E_deposited = data["E_deposited"]
+            sigma_deposited = data["sigma"]
+            lmbda_eff = data["lambda_eff"]
+            Z = data["Z"]
+            alpha = -np.log(E_deposited / E_openBeam[E])
+            sigma = np.sqrt(sigma_deposited**2 / E_deposited**2 + sigma_openBeam[E]**2 / E_openBeam[E]**2)
+            if Z not in lookupTables[E].keys():
+                lookupTables[E][Z] = {}
+            lookupTables[E][Z][lmbda_eff] = (alpha, sigma)
 
     Z_arr = np.sort(np.array(list(lookupTables[energies[0]].keys())))
     lookup_alpha = {E: {} for E in energies}
     for Z in Z_arr:
         for E in energies:
-            phi = np.load("/Users/peter/Work/radiography/data/phi_%sMeV_10.npy" % E)
             lmbda_arr = np.sort(np.array(list(lookupTables[E][Z].keys())))
             alpha_arr, sigma_arr = np.array([lookupTables[E][Z][lmbda] for lmbda in lmbda_arr]).T
-
-            if Z <= 100:
-                lmbda_eff = np.array([calcLambdaEff(lmbda, theta, Z, phi, D, mu_mat, Z_range) for lmbda in lmbda_arr])
-            else:
-                Z_arr = compound_Z[Z]
-                w_arr = compound_w[Z]
-                lmbda_eff = np.array([calcCompoundLambdaEff(lmbda, theta, Z_arr, w_arr, phi, D, mu_mat, Z_range) for lmbda in lmbda_arr])
-
-            lookup_alpha[E][Z] = (lmbda_eff, alpha_arr, sigma_arr)
-
-    np.save(npy_file, lookup_alpha)
-    print("Finished in %d seconds" % (time() - t0))
+            lookup_alpha[E][Z] = (lmbda_arr, alpha_arr, sigma_arr)
+    
     return lookup_alpha
 
 def extractFromTables(lookup_alpha, H, L):
@@ -120,7 +79,7 @@ def extractFromTables(lookup_alpha, H, L):
 def calcMu_tot(E, Z_range):
     """
     Returns a mass muuation coefficient matrix, where element (i, j) is the mass
-    muuation coefficient of element with energy E[i] and atomic number Z_range[j]
+    attenuation coefficient of element with energy E[i] and atomic number Z_range[j]
     """
     mu_mat = np.zeros((E.size, Z_range.size))
     for i in range(Z_range.size):
@@ -318,50 +277,6 @@ def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, Z_range):
 #     return Z_rangeFrac[idx], loss_arr[idx]
 
 ###
-
-def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
-    """Finds the effective lambda which approximates the entire target"""
-    def calcLogD0(lmbda):
-        m0 = np.exp(-mu * lmbda)
-        d0 = np.dot(D, m0 * phi)
-        logD0 = np.log(d0)
-        return logD0
-        
-    mu = mu_mat[:,Z - Z_range[0]]
-    thetaRange = np.linspace(0, theta0, 1001)
-    dtheta = thetaRange[1] - thetaRange[0]
-    theta = 0.5*(thetaRange[1:] + thetaRange[:-1])
-    lmbda = lmbda0 / np.cos(theta)
-    m = np.exp(-np.outer(mu, lmbda))
-    m0 = dtheta * np.sum(m, axis=1) / theta0
-    d0 = np.dot(D, m0 * phi)
-    logD0 = np.log(d0)
-    
-    sol = root(lambda lmbdaEff: calcLogD0(lmbdaEff) - logD0, x0=lmbda0)
-    assert sol.success
-    return sol.x[0]
-
-def calcCompoundLambdaEff(lmbda0, theta0, Z_arr, w_arr, phi, D, mu_mat, Z_range):
-    """Finds the effective lambda which approximates the entire compound target"""
-    def calcLogD0(lmbda):
-        m0 = np.exp(-np.sum(mu * (lmbda * w_arr), axis=1))
-        d0 = np.dot(D, m0 * phi)
-        logD0 = np.log(d0)
-        return logD0
-    
-    mu = mu_mat[:,Z_arr - Z_range[0]]
-    thetaRange = np.linspace(0, theta0, 1001)
-    dtheta = thetaRange[1] - thetaRange[0]
-    theta = 0.5*(thetaRange[1:] + thetaRange[:-1])
-    A = np.sum(mu * lmbda0 * w_arr, axis=1)
-    m = np.exp(-np.outer(A, 1/np.cos(theta)))
-    m0 = dtheta * np.sum(m, axis=1) / theta0
-    d0 = np.dot(D, m0 * phi)
-    logD0 = np.log(d0)
-    
-    sol = root(lambda lmbdaEff: calcLogD0(lmbdaEff) - logD0, x0=lmbda0)
-    assert sol.success
-    return sol.x[0]
 
 def calcBias(alpha, sigma, lmbda, Z, phi, D, mu_mat, Z_range):
     """Finds the bias term such that chi-squared equals one"""
