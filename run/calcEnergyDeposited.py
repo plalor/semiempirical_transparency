@@ -59,7 +59,7 @@ def calcEnergyDeposited(data_dir):
         N = 0
         E_deposited = 0
         sigma = 0        
-        for filename in os.listdir(data_directory + directory)
+        for filename in os.listdir(data_directory + directory):
             if filename.endswith(".dat"):
                 N += int(re.search("N=(\d+)", filename)[1])
                 with open(data_directory + directory + "/" + filename) as f:
