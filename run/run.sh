@@ -9,7 +9,7 @@ then
   data_dir=$1
   jobs=$2
 else
-  echo "Usage: sh run.sh <datadir> <number of jobs>";
+  echo "Usage: sh run.sh <data_dir> <number of jobs>";
   exit 1
 fi
 
