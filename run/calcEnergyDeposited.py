@@ -95,7 +95,7 @@ def calcEnergyDeposited(data_dir):
         else:
             fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
                 
-        np.save(path + "data/" + data_dir + fileout, data)
+        np.save(path + "out/" + data_dir + fileout, data)
             
 def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
     """Finds the effective lambda which approximates the entire target"""
