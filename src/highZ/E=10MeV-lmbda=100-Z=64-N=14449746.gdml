@@ -1,41 +1,15 @@
-import numpy as np
-from XCOM import mu_tot
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
-### File Input Parameters
-
-E_range = ["10", "6", "4"]
-max_error = 3e-5
-#xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
-xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
-
-### Loading files to approximate the appropriate number of MC particles to run
-
-path = "/Users/peter/Work/radiography/data/"
-D = np.load(path + "D_10.npy")
-D2 = np.load(path + "D2_10.npy")
-E = np.load(path + "E_10.npy")
-phi_4 = np.load(path + "phi_4MeV_10.npy")
-
-def calcRelError(lmbda, Z, phi):
-    mu = mu_tot(E, Z)
-    m0 = np.exp(-mu * lmbda)
-    d0 = np.dot(D, m0 * phi)
-    sigma0 = np.sqrt(np.dot(D2, m0 * phi))
-    return sigma0 / d0
-
-### Creating files
-
-for E0 in E_range:
-    phi = np.load(path + "phi_%sMeV_10.npy" % E0)      
-    error = calcRelError(0, 26, phi)
-    N = int((error / max_error)**2)
-        
-    filename = "E=%sMeV-lmbda=0-N=%d.gdml" % (E0, N)
-    filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-
-<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
-
+<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/home/plalor/grasshopperPeter/xml/gdml.xsd">
+  
 <define>
+  <!-- target material -->
+  <constant name="target_lambda" value="100.0"/> <!-- target area density, g/cm^2 -->
+  <constant name="x_target" value="100"/> <!-- target thickness in cm -->
+  <constant name="y_target" value="200"/> <!-- target depth in cm -->
+  <constant name="z_target" value="400"/> <!-- target height in cm -->
+  <constant name="dist_target" value="350"/> <!-- distance from source to target in cm -->
+  <constant name="target_rho" value="target_lambda/x_target"/> <!-- target density -->
   <!-- collimator properties -->
   <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
   <constant name="y_collimator" value="20"/>  <!-- depth in cm -->
@@ -51,11 +25,16 @@ for E0 in E_range:
   <!-- loop index (for generating detector stack -->
   <variable name="i"/>
 </define>
-
+   
    <materials>
-
+    
+    <material name="Target" state="solid">
+      <D unit="g/cm3" value="target_rho"/>
+      <fraction n="1" ref="G4_Gd"/>
+    </material>
+    
   </materials>
-
+    
   <!-- THE OUTPUT -->
   <define>
     <constant name="TextOutputOn" value="1"/> <!-- the value should be either 1 (true) or 0 -->
@@ -63,7 +42,7 @@ for E0 in E_range:
     <constant name="VRMLvisualizationOn" value="0"/> <!-- 1 means that you want a VRML file -->
     <constant name="EventsToAccumulate" value="50"/> <!-- number of tracks to accumulate in the visualization -->
   </define>
-
+  
   <!-- CUTS...apply various cuts to make the computation more efficient -->
   <define>
     <constant name="LightProducingParticle" value="0"/> <!-- the particle which is actually producing light in the detector.  0 means ALL.  It will also kill all particles other than LightProducingParticle in the detector.  If in doubt set to 0. -->
@@ -91,21 +70,24 @@ for E0 in E_range:
     <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
     <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
     <quantity name="ThetaMax" value="pi/2"/>
-    <constant name="EventsToRun" value="{N}"/>
+    <constant name="EventsToRun" value="14449746"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
-
+ 
   </define>
 
   <!-- definition of solid geometries -->
   <solids>
     <!-- world volume -->
     <box name="world_solid" x="20" y="20" z="20" lunit="m"/>
-
+    
+    <!-- target -->
+    <box name = "target_box" x="x_target" y="y_target" z="z_target" lunit= "cm"/>
+    
     <!-- collimators -->
     <box name = "collimator_1" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
     <box name = "collimator_2" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
-
+    
     <!-- cadmium tungstate detectors -->
     <loop for="i" from="1" to="n_detectors" step="1">
       <box name = "CdWO4_detector[i]" x="x_detector" y="y_detector" z="z_detector" lunit= "cm"/>
@@ -115,13 +97,19 @@ for E0 in E_range:
 
   <!-- PUTTING IT ALL TOGETHER -->
   <structure>
-
+       
+     <!-- target -->
+     <volume name="target_log">
+       <materialref ref="Target"/>
+       <solidref ref="target_box"/>
+     </volume>
+       
      <!-- collimators -->
      <volume name="collimator_1_log">
        <materialref ref="G4_Pb"/>
        <solidref ref="collimator_1"/>
      </volume>
-
+     
      <volume name="collimator_2_log">
        <materialref ref="G4_Pb"/>
        <solidref ref="collimator_2"/>
@@ -134,23 +122,29 @@ for E0 in E_range:
         <solidref ref="CdWO4_detector[i]"/>
       </volume>
     </loop>
-
+    
     <!-- top level world volume with all geometry elements -->
     <volume name="world_log">
       <materialref ref="G4_AIR"/>
       <solidref ref="world_solid"/>  <!-- world_solid This should NEVER be changed -->
-
+      
+      <!-- target -->
+      <physvol name="target_phys">
+        <volumeref ref="target_log"/>
+        <position name="target_pos" unit="cm" x="dist_detector/2" y="0" z="z_target/2"/>
+      </physvol>
+      
       <!-- collimators -->
       <physvol name="collimator_1_phys">
         <volumeref ref="collimator_1_log"/>
         <position name="collimator_1_pos" unit="cm" x="dist_detector-x_collimator/2" y="(y_collimator+sep_collimator)/2" z="z_collimator/2"/>
       </physvol>
-
+      
       <physvol name="collimator_2_phys">
         <volumeref ref="collimator_2_log"/>
         <position name="collimator_2_pos" unit="cm" x="dist_detector-x_collimator/2" y="-(y_collimator+sep_collimator)/2" z="z_collimator/2"/>
       </physvol>
-
+      
       <!-- detector -->
       <loop for="i" from="1" to="n_detectors" step="1">
         <physvol name="det_phys[i]">
@@ -167,6 +161,3 @@ for E0 in E_range:
     <world ref="world_log"/>
   </setup>
 </gdml>
-"""
-    with open(filename, "w") as f:
-        f.write(filestring)

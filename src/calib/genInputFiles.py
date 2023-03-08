@@ -7,8 +7,7 @@ Z_range = np.array([6, 26, 82])
 E_range = ["10", "6", "4"]
 lmbda_range = np.array([150])
 num_jobs = 20
-#max_error = 3e-5
-max_error = 1e-2
+max_error = 3e-5
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 

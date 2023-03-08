@@ -3,17 +3,12 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-#Z_range = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103, 104, 105, 106, 107])  # different elements to test
-Z_range = np.array([6, 13, 26, 55, 82, 92, 101])
+Z_range = np.array([1, 6, 13, 20, 26, 32, 40, 47, 55, 64, 74, 82, 92, 101, 102, 103, 104, 105, 106, 107])  # different elements to test
 E_range = ["10", "6", "4"]  # bremmstrahlung energies
-#lmbda_spacing = 10  # lambda spacing between simulations
-lmbda_spacing = 20
-# N0 = 1e6            # thin target num_particles
-# N1 = 3e9            # thick target num_particles
-N0 = 1e3
-N1 = 1e5
-#max_error = 6.56e-4
-max_error = 1e-2
+lmbda_spacing = 10  # lambda spacing between simulations
+N0 = 1e6            # thin target num_particles
+N1 = 3e9            # thick target num_particles
+max_error = 6.56e-4
 #xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
 xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
 
