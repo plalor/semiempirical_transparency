@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import root
-from XCOM import mu_tot
+from utils import calcMu_tot
 import os
 import re
 
@@ -12,19 +12,13 @@ path = "/home/plalor/semiempirical_transparency/"
 D = np.load(path_data + "D_10.npy")
 E = np.load(path_data + "E_10.npy")
 Z_range = np.arange(1, 101)
+mu_mat = calcMu_tot(E, Z_range)
 theta = np.arcsin(400 / 700)
 
 phi_dict = {}
 phi_dict["10"] = np.load(path_data + "phi_10MeV_10.npy")
 phi_dict["6"] = np.load(path_data + "phi_6MeV_10.npy")
 phi_dict["4"] = np.load(path_data + "phi_4MeV_10.npy")
-
-### calculate mass attenuation matrix
-
-mu_mat = np.zeros((E.size, Z_range.size))
-for i in range(Z_range.size):
-    Z = Z_range[i]
-    mu_mat[:,i] = mu_tot(E, Z)
 
 ### Adding compound materials
 

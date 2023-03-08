@@ -6,5 +6,5 @@ Semiempirical_transparency is a repository for running radiography simulations a
 ```console
 cd run
 sh run.sh calib 20
-python calcEnergyDeposited.py
+sh calcEnergyDeposited.sh
 ```
