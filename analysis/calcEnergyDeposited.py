@@ -138,6 +138,4 @@ def calcCompoundLambdaEff(lmbda0, theta0, Z_arr, w_arr, phi, D, mu_mat, Z_range)
 
 ### Run
 
-calcEnergyDeposited("openBeam")
-calcEnergyDeposited("test")
-calcEnergyDeposited("calib")
+calcEnergyDeposited("highZ")
