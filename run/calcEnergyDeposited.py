@@ -57,15 +57,15 @@ compound_w[107] = np.array([0.118502, 0.881498])
 def calcEnergyDeposited(data_dir):
     """Calculates the average energy deposited per particle (and the 
     corresponding uncertainty) from each .dat file in the given directory"""
-    data_directory = path + "out/" + data_dir + "/"
-    for directory in os.listdir(data_directory):
+    run_directory = path + "run/" + data_dir + "/"
+    for directory in os.listdir(run_directory):
         N = 0
         E_deposited = 0
         sigma = 0        
-        for filename in os.listdir(data_directory + directory):
+        for filename in os.listdir(run_directory + directory):
             if filename.endswith(".dat"):
                 N += int(re.search("N=(\d+)", filename)[1])
-                with open(data_directory + directory + "/" + filename) as f:
+                with open(run_directory + directory + "/" + filename) as f:
                     header = np.array(f.readline().split())
                     idx = np.argmax(header == "E_deposited(MeV)")
                     for line in f:
@@ -98,7 +98,7 @@ def calcEnergyDeposited(data_dir):
         else:
             fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
                 
-        np.save(path + "out/" + data_dir + fileout, data)
+        np.save(path + "out/" + data_dir + "/" + fileout, data)
             
 def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
     """Finds the effective lambda which approximates the entire target"""
