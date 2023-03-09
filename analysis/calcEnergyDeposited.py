@@ -1,11 +1,20 @@
 import numpy as np
 from scipy.optimize import root
 from utils import calcMu_tot
+import sys
 import os
 import re
 
 path_data = "/home/plalor/radiography/data/"
 path = "/home/plalor/semiempirical_transparency/"
+
+### Parsing user input
+
+if len(sys.argv) != 2:
+    raise ValueError("Usage: python calcEnergyDeposited.py <data_dir>")
+    
+data_dir = sys.argv[1]
+assert data_dir in ("openBeam", "test", "calib", "highZ", "lowLmbda")
 
 ### Loading simulation parameters
 
@@ -138,4 +147,4 @@ def calcCompoundLambdaEff(lmbda0, theta0, Z_arr, w_arr, phi, D, mu_mat, Z_range)
 
 ### Run
 
-calcEnergyDeposited("highZ")
+calcEnergyDeposited(data_dir)
