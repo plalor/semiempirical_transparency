@@ -12,7 +12,7 @@ def calcLookupTables(data_dir):
     sigma_openBeam = {}
     for filename in os.listdir(path + "openBeam/"):
         if filename.endswith(".npy"):
-            data = np.load(path + "openBeam/" + filename, allow_pickle='TRUE').item()
+            data = np.load(path + "openBeam/" + filename, allow_pickle=True).item()
             if data["lambda"] == 0:
                 E = data["E"]
                 E_openBeam[E] = data["E_deposited"]
@@ -22,7 +22,7 @@ def calcLookupTables(data_dir):
     lookupTables = {E: {} for E in energies}
     for filename in os.listdir(path + data_dir):
         if filename.endswith(".npy"):
-            data = np.load(path + data_dir + filename, allow_pickle='TRUE').item()
+            data = np.load(path + data_dir + filename, allow_pickle=True).item()
             E = data["E"]
             E_deposited = data["E_deposited"]
             sigma_deposited = data["sigma"]

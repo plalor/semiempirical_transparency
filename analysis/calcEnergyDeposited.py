@@ -61,6 +61,7 @@ def calcEnergyDeposited(data_dir):
     """Calculates the average energy deposited per particle (and the 
     corresponding uncertainty) from each .dat file in the given directory"""
     run_directory = path + "run/" + data_dir + "/"
+    out_directory = path + "out/" + data_dir + "/"
     for directory in os.listdir(run_directory):
         N = 0
         E_deposited = 0
@@ -101,7 +102,7 @@ def calcEnergyDeposited(data_dir):
         else:
             fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
                 
-        np.save(path + "out/" + data_dir + "/" + fileout, data)
+        np.save(out_directory + fileout, data)
             
 def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
     """Finds the effective lambda which approximates the entire target"""
