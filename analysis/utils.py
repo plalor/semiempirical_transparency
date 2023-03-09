@@ -5,13 +5,14 @@ from time import perf_counter as time
 import os
 import re
 
-def calcLookupTables(path, datadir):
-    """Computes lookup tables from a directory of .npy files"""        
+def calcLookupTables(data_dir):
+    """Computes lookup tables from a directory of .npy files"""
+    path = "/Users/peter/Work/semiempirical_transparency/out/"
     E_openBeam = {}
     sigma_openBeam = {}
-    for filename in os.listdir(path + "data/"):
+    for filename in os.listdir(path + "openBeam/"):
         if filename.endswith(".npy"):
-            data = np.load(path + "data/" + filename, allow_pickle='TRUE').item()
+            data = np.load(path + "openBeam/" + filename, allow_pickle='TRUE').item()
             if data["lambda"] == 0:
                 E = data["E"]
                 E_openBeam[E] = data["E_deposited"]
@@ -19,9 +20,9 @@ def calcLookupTables(path, datadir):
 
     energies = list(E_openBeam.keys())
     lookupTables = {E: {} for E in energies}
-    for filename in os.listdir(path + "data/" + datadir):
+    for filename in os.listdir(path + data_dir):
         if filename.endswith(".npy"):
-            data = np.load(path + "data/" + datadir + filename, allow_pickle='TRUE').item()
+            data = np.load(path + data_dir + filename, allow_pickle='TRUE').item()
             E = data["E"]
             E_deposited = data["E_deposited"]
             sigma_deposited = data["sigma"]
@@ -35,8 +36,8 @@ def calcLookupTables(path, datadir):
 
     Z_arr = np.sort(np.array(list(lookupTables[energies[0]].keys())))
     lookup_alpha = {E: {} for E in energies}
-    for Z in Z_arr:
-        for E in energies:
+    for E in energies:
+        for Z in Z_arr:
             lmbda_arr = np.sort(np.array(list(lookupTables[E][Z].keys())))
             alpha_arr, sigma_arr = np.array([lookupTables[E][Z][lmbda] for lmbda in lmbda_arr]).T
             lookup_alpha[E][Z] = (lmbda_arr, alpha_arr, sigma_arr)
