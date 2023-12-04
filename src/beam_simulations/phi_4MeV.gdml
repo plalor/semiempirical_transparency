@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/nfs/home2/plalor/grasshopper/xml/gdml.xsd">
+  
+  <define>
+    <!-- target dimensions, height x width x thickness (cm) -->
+    <constant name="x_target" value="2.0"/>
+    <constant name="y_target" value="2.0"/>
+    <constant name="z_target" value="0.1"/>
+    
+    <!-- slab dimensions, height x width x thickness (cm) -->
+    <constant name="x_slab" value="2.0"/>
+    <constant name="y_slab" value="2.0"/>
+    <constant name="z_slab" value="1.0"/>
+    
+    <!-- filter dimensions, height x width x thickness (cm) -->
+    <constant name="x_filter" value="2.0"/>
+    <constant name="y_filter" value="2.0"/>
+    <constant name="z_filter" value="1.0"/>
+    
+    <!-- distance from electron beam to radiator (cm), shouldn't matter -->
+    <constant name="dist_radiator" value="10"/>
+    
+    <!-- distance from radiator to tally detector (cm), shouldn't matter -->
+    <constant name="dist_tally" value="10"/>
+  </define>
+  
+   <materials>
+    
+    <material name="Vacuum" state="gas">
+      <D unit="g/cm3" value="1e-12"/>
+      <fraction n="1" ref="G4_AIR"/>
+    </material>
+    
+  </materials>
+    
+  <!-- THE OUTPUT -->
+  <define>
+  	<constant name="TextOutputOn" value="1"/> <!-- the value should be either 1 (true) or 0 -->
+  	<constant name="BriefOutputOn" value="0"/> <!-- enable this if you want the shorter version of the text output -->
+  	<constant name="VRMLvisualizationOn" value="0"/> <!-- 1 means that you want a VRML file -->
+  	<constant name="EventsToAccumulate" value="50"/> <!-- number of tracks to accumulate in the visualization -->
+  </define>
+  
+  <!-- CUTS...apply various cuts to make the computation more efficient -->
+  <define>
+    <constant name="LightProducingParticle" value="0"/> <!-- the particle which is actually producing light in the detector.  0 means ALL.  It will also kill all particles other than LightProducingParticle in the detector.  If in doubt set to 0. -->
+    <constant name="LowEnergyCutoff" value="0."/><!-- The low energy cuttoff, MeV, for the main track. If in doubt set it to 0 -->
+    <constant name="KeepOnlyMainParticle" value="0"/> <!-- if 1, the simulation will track only the main particle, as defined by ParticleNumber in the beam definition, OUTSIDE the detector volume.  For example, you'll need to set this to 0 to simulate bremmstrahlung, but to 1 for any transmission simulation. If in doubt, set to 0.-->
+    <quantity name="ProductionLowLimit" type="threshold" value="80" unit="keV" /> <!-- for neutron processes anything >1keV causes things to hang...set this to a high value for any other process to optimize computational time.  There are still some intricacies with this.  With high enough energy, rather than generating secondaries, all the energy loss will get tagged to the EnergyDeposited for the main particle.  So, the energy scoring (as determined by LighProducingParticle above) needs to be adjusted accordingly. -->
+  </define>
+
+<!-- OUTPUT FILTERS.  What data/entries do you want to keep? -->
+  <define>
+    <constant name="SaveSurfaceHitTrack" value="0"/> <!-- save entries which contain hit information, e.g. if you want to simulate the flux of particles -->
+    <constant name="SaveTrackInfo" value="1"/> <!-- save individual track info (within an event).  This is useful for studying the physics of the various interactions -->
+    <constant name="SaveEdepositedTotalEntry" value="0"/> <!--save entries which summarize the total deposited energy, e.g. in detector response simulations -->
+  </define>
+
+  <!-- THE BEAM -->
+  <define>
+    <constant name="RandomGenSeed" value="1"/>
+    <quantity name="BeamOffsetX"  type="coordinate" value="0" unit="cm"/>
+    <quantity name="BeamOffsetY"  type="coordinate" value="0" unit="cm"/>
+    <quantity name="BeamOffsetZ"  type="coordinate" value="0" unit="cm"/>
+    <quantity name="BeamSize" type="coordinate" value="0" unit="cm"/>
+
+    <quantity name="BeamEnergy" type="energy" value="4" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
+    <constant name="EventsToRun" value="5e8"/>
+    <constant name="ParticleNumber" value="11"/>
+    <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
+ 
+  </define>
+
+
+  <!-- definition of solid geometries -->
+  <solids>
+    <!-- world volume -->
+    <box name="world_solid" x="10" y="10" z="10" lunit="m"/>
+
+    <!-- tungsten target -->
+    <box name="tungsten_target" x="x_target" y="y_target" z="z_target" lunit="cm"/>
+    
+    <!-- copper slab -->
+    <box name="copper_slab" x="x_slab" y="y_slab" z="z_slab" lunit="cm"/>
+    
+    <!-- steel filter -->
+    <box name="steel_filter" x="x_filter" y="y_filter" z="z_filter" lunit="cm"/>
+    
+    <!-- detection plane -->
+    <tube name = "detection_plane" rmin="0" rmax="0.2" z="0.01" deltaphi="360." startphi="0" aunit="deg" lunit= "cm"/>
+    
+  </solids>
+
+
+  <!-- PUTTING IT ALL TOGETHER -->
+  <structure>
+    
+    <!-- tungsten target -->
+    <volume name="tungsten_target_log">
+      <materialref ref="G4_W"/>
+      <solidref ref="tungsten_target"/>
+    </volume>
+    
+    <!-- copper slab -->
+    <volume name="copper_slab_log">
+      <materialref ref="G4_Cu"/>
+      <solidref ref="copper_slab"/>
+    </volume>
+    
+    <!-- steel filter -->
+    <volume name="steel_filter_log">
+      <materialref ref="G4_Fe"/>
+      <solidref ref="steel_filter"/>
+    </volume>
+    
+    <!-- detection plane -->
+    <volume name="detection_plane_log">
+      <materialref ref="Vacuum"/>
+      <solidref ref="detection_plane"/>
+    </volume>
+    
+    <!-- top level world volume with all geometry elements -->
+    <volume name="world_log">
+      <materialref ref="Vacuum"/>
+      <solidref ref="world_solid"/>  <!-- world_solid This should NEVER be changed -->
+      
+      <!-- tungsten target -->
+      <physvol name="tungsten_target_phys">
+        <volumeref ref="tungsten_target_log"/>
+        <position name="tungsten_target_pos" unit="cm" x="0" y="0" z="dist_radiator"/>
+      </physvol>
+      
+      <!-- copper slab -->
+      <physvol name="copper_slab_phys">
+        <volumeref ref="copper_slab_log"/>
+        <position name="copper_slab_pos" unit="cm" x="0" y="0" z="dist_radiator+z_target/2+z_slab/2"/>
+      </physvol>
+      
+      <!-- steel filter -->
+      <physvol name="steel_filter_phys">
+        <volumeref ref="steel_filter_log"/>
+        <position name="steel_filter_pos" unit="cm" x="0" y="0" z="dist_radiator+z_target/2+z_slab+z_filter/2"/>
+      </physvol>
+      
+      <!-- detection plane -->
+      <physvol name="det_phys">
+        <volumeref ref="detection_plane_log"/>
+        <position name="detection_plane_pos" unit="cm" x="0" y="0" z="dist_radiator+dist_tally"/>
+      </physvol>
+      
+    </volume>
+
+  </structure>
+
+  <setup name="Default" version="1.0">
+    <world ref="world_log"/>
+  </setup>
+</gdml>
