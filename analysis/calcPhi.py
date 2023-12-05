@@ -1,7 +1,6 @@
 import numpy as np
 import re
 import os
-from time import perf_counter as time
 import sys
 
 ### Parsing user input
@@ -17,7 +16,7 @@ energy = float(re.search("E=(\d+\.?\d+|\d+)", filename)[1])
 E_max = 10
 E_bins = 1000
 
-def calcEnergyDist(filepath, energy, E_max, E_bins):
+def calcPhotonFlux(filepath, energy, E_max, E_bins):
     """Calculates the density function phi(E)"""
     filepath_split = filepath.split("/")
     path = "/".join(filepath_split[:-1])
@@ -26,7 +25,6 @@ def calcEnergyDist(filepath, energy, E_max, E_bins):
     dE_inv = E_bins / E_max
     phi = np.zeros(E_bins)
     print("Calculating Photon Flux...")
-    t0 = time()
     for filename in os.listdir(path):
         if filename.startswith(filebase) and filename.endswith(".dat"):
             with open("/".join([path, filename])) as f:
@@ -44,14 +42,15 @@ def calcEnergyDist(filepath, energy, E_max, E_bins):
                         E_idx = int(E * dE_inv)
                         phi[E_idx] += 1
     phi = phi * dE_inv / np.sum(phi)
-    print("Completed in %d seconds" % (time() - t0))
+    E_arr = np.linspace(0, E_max, E_bins+1)
+    E = 0.5*(E_arr[1:] + E_arr[:-1])
+
+    phi_outfile = f"{path}/phi_{energy}MeV.npy"
+    E_outfile = f"{path}/E.npy"
+    np.save(phi_outfile, phi)
+    np.save(E_outfile, E)
+    print("Saved phi to", phi_outfile)
+    print("Saved E to", E_outfile)
     return phi
 
-### Run
-
-E_arr = np.linspace(0, E_max, E_bins+1)
-E = 0.5*(E_arr[1:] + E_arr[:-1])
-np.save("E.npy", E)
-
-phi = calcEnergyDist(filepath, energy, E_max, E_bins)
-np.save("phi_%dMeV.npy" % energy, phi)
+calcPhotonFlux(filepath, energy, E_max, E_bins)
