@@ -1,22 +1,20 @@
 import numpy as np
 from scipy.optimize import minimize, root
 from XCOM import mu_tot, mu_PE, mu_CS, mu_PP, mu_en
-from time import perf_counter as time
 import os
-import re
 
 def calcLookupTables(data_dir):
     """Computes lookup tables from a directory of .npy files"""
-    path = "/Users/peter/Work/semiempirical_transparency/out/"
+    path = "/Users/peter/Work/semiempirical_transparency/data/"
     E_openBeam = {}
-    sigma_openBeam = {}
-    for filename in os.listdir(path + "openBeam"):
+    var_openBeam = {}
+    for filename in os.listdir(path + "open_beam"):
         if filename.endswith(".npy"):
-            data = np.load(path + "openBeam/" + filename, allow_pickle=True).item()
+            data = np.load(path + "open_beam/" + filename, allow_pickle=True).item()
             if data["lambda"] == 0:
                 E = data["E"]
                 E_openBeam[E] = data["E_deposited"]
-                sigma_openBeam[E] = data["sigma"]
+                var_openBeam[E] = data["var_deposited"]
 
     energies = list(E_openBeam.keys())
     lookupTables = {E: {} for E in energies}
@@ -25,11 +23,11 @@ def calcLookupTables(data_dir):
             data = np.load(path + data_dir + "/" + filename, allow_pickle=True).item()
             E = data["E"]
             E_deposited = data["E_deposited"]
-            sigma_deposited = data["sigma"]
+            var_deposited = data["var_deposited"]
             lmbda_eff = data["lambda_eff"]
             Z = data["Z"]
             alpha = -np.log(E_deposited / E_openBeam[E])
-            sigma = np.sqrt(sigma_deposited**2 / E_deposited**2 + sigma_openBeam[E]**2 / E_openBeam[E]**2)
+            sigma = np.sqrt(var_deposited / E_deposited**2 + var_openBeam[E] / E_openBeam[E]**2)
             if Z not in lookupTables[E].keys():
                 lookupTables[E][Z] = {}
             lookupTables[E][Z][lmbda_eff] = (alpha, sigma)
@@ -43,143 +41,6 @@ def calcLookupTables(data_dir):
             lookup_alpha[E][Z] = (lmbda_arr, alpha_arr, sigma_arr)
     
     return lookup_alpha
-
-
-###########
-########### DEBUG -- I think theta should be an arctan not an arcsin, meaning my numbers are all slightly fudged
-###########
-
-def calcLookupTablesDEBUG(data_dir):
-    """Computes lookup tables from a directory of .npy files"""
-    theta = np.arctan(400 / 700)
-    path_data = "/Users/peter/Work/radiography/data/"
-    D = np.load(path_data + "D_10.npy")
-    E = np.load(path_data + "E_10.npy")
-    Z_range = np.arange(1, 101)
-    mu_mat = calcMu_tot(E, Z_range)
-    phi_dict = {}
-    phi_dict["10"] = np.load(path_data + "phi_10MeV_10.npy")
-    phi_dict["6"] = np.load(path_data + "phi_6MeV_10.npy")
-    phi_dict["4"] = np.load(path_data + "phi_4MeV_10.npy")
-    
-    compound_Z = {}
-    compound_w = {}
-
-    compound_Z[101] = np.array([1, 6])
-    compound_w[101] = np.array([0.143711, 0.856289])
-
-    compound_Z[102] = np.array([8, 13])
-    compound_w[102] = np.array([0.470749, 0.529251])
-
-    compound_Z[103] = np.array([17, 47])
-    compound_w[103] = np.array([0.247368, 0.752632])
-
-    compound_Z[104] = np.array([3, 53])
-    compound_w[104] = np.array([0.051858, 0.948142])
-
-    compound_Z[105] = np.array([8, 48, 74])
-    compound_w[105] = np.array([0.177644, 0.312027, 0.510329])
-
-    compound_Z[106] = np.array([8, 14, 22, 33, 82])
-    compound_w[106] = np.array([0.156453, 0.080866, 0.008092, 0.002651, 0.751938])
-
-    compound_Z[107] = np.array([8, 92])
-    compound_w[107] = np.array([0.118502, 0.881498])
-    
-    ### Now begin
-    path = "/Users/peter/Work/semiempirical_transparency/out/"
-    E_openBeam = {}
-    sigma_openBeam = {}
-    for filename in os.listdir(path + "openBeam"):
-        if filename.endswith(".npy"):
-            data = np.load(path + "openBeam/" + filename, allow_pickle=True).item()
-            if data["lambda"] == 0:
-                E = data["E"]
-                E_openBeam[E] = data["E_deposited"]
-                sigma_openBeam[E] = data["sigma"]
-
-    energies = list(E_openBeam.keys())
-    lookupTables = {E: {} for E in energies}
-    for filename in os.listdir(path + data_dir):
-        if filename.endswith(".npy"):
-            data = np.load(path + data_dir + "/" + filename, allow_pickle=True).item()
-            E = data["E"]
-            E_deposited = data["E_deposited"]
-            sigma_deposited = data["sigma"]
-            Z = data["Z"]
-            
-            ### recompute lambda_eff, since originally I used arcsin instead of arctan
-            lmbda = data["lambda"]
-            phi = phi_dict[E]
-            if Z <= 100:
-                lmbda_eff = calcLambdaEff(lmbda, theta, Z, phi, D, mu_mat, Z_range)
-            else:
-                Z_arr = compound_Z[Z]
-                w_arr = compound_w[Z]
-                lmbda_eff = calcCompoundLambdaEff(lmbda, theta, Z_arr, w_arr, phi, D, mu_mat, Z_range)
-            ###            
-
-            alpha = -np.log(E_deposited / E_openBeam[E])
-            sigma = np.sqrt(sigma_deposited**2 / E_deposited**2 + sigma_openBeam[E]**2 / E_openBeam[E]**2)
-            if Z not in lookupTables[E].keys():
-                lookupTables[E][Z] = {}
-            lookupTables[E][Z][lmbda_eff] = (alpha, sigma)
-
-    Z_arr = np.sort(np.array(list(lookupTables[energies[0]].keys())))
-    lookup_alpha = {E: {} for E in energies}
-    for E in energies:
-        for Z in Z_arr:
-            lmbda_arr = np.sort(np.array(list(lookupTables[E][Z].keys())))
-            alpha_arr, sigma_arr = np.array([lookupTables[E][Z][lmbda] for lmbda in lmbda_arr]).T
-            lookup_alpha[E][Z] = (lmbda_arr, alpha_arr, sigma_arr)
-    
-    return lookup_alpha
-
-def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
-    """Finds the effective lambda which approximates the entire target"""
-    def calcLogD0(lmbda):
-        m0 = np.exp(-mu * lmbda)
-        d0 = np.dot(D, m0 * phi)
-        log_d0 = np.log(d0)
-        return log_d0
-        
-    mu = mu_mat[:,Z - Z_range[0]]
-    theta_range = np.linspace(0, theta0, 1001)
-    dtheta = theta_range[1] - theta_range[0]
-    theta = 0.5*(theta_range[1:] + theta_range[:-1])
-    lmbda = lmbda0 / np.cos(theta)
-    m = np.exp(-np.outer(mu, lmbda))
-    m0 = dtheta * np.sum(m, axis=1) / theta0
-    d0 = np.dot(D, m0 * phi)
-    log_d0 = np.log(d0)
-    sol = root(lambda lmbda_eff: calcLogD0(lmbda_eff) - log_d0, x0=lmbda0)
-    assert sol.success
-    return sol.x[0]
-
-def calcCompoundLambdaEff(lmbda0, theta0, Z_arr, w_arr, phi, D, mu_mat, Z_range):
-    """Finds the effective lambda which approximates the entire compound target"""
-    def calcLogD0(lmbda):
-        m0 = np.exp(-np.sum(mu * (lmbda * w_arr), axis=1))
-        d0 = np.dot(D, m0 * phi)
-        log_d0 = np.log(d0)
-        return log_d0
-    
-    mu = mu_mat[:,Z_arr - Z_range[0]]
-    theta_range = np.linspace(0, theta0, 1001)
-    dtheta = theta_range[1] - theta_range[0]
-    theta = 0.5*(theta_range[1:] + theta_range[:-1])
-    A = np.sum(mu * lmbda0 * w_arr, axis=1)
-    m = np.exp(-np.outer(A, 1/np.cos(theta)))
-    m0 = dtheta * np.sum(m, axis=1) / theta0
-    d0 = np.dot(D, m0 * phi)
-    log_d0 = np.log(d0)
-    sol = root(lambda lmbda_eff: calcLogD0(lmbda_eff) - log_d0, x0=lmbda0)
-    assert sol.success
-    return sol.x[0]
-
-###########
-###########
-###########
 
 def extractFromTables(lookup_alpha, H, L):
     E0 = list(lookup_alpha.keys())[0]

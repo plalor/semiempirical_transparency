@@ -66,7 +66,7 @@
     <quantity name="BeamSize" type="coordinate" value="0" unit="cm"/>
 
     <quantity name="BeamEnergy" type="energy" value="4" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
-    <constant name="EventsToRun" value="5e8"/>
+    <constant name="EventsToRun" value="1e9"/>
     <constant name="ParticleNumber" value="11"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
  

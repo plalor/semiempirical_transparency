@@ -3,22 +3,18 @@ from XCOM import mu_tot
 
 ### File Input Parameters
 
-Z_range = np.array([50])
-E_range = ["10", "6", "4"]
+Z_range = np.array([64, 74, 82, 92])
+E_range = ["4", "6", "10"]
 lmbda_range = np.linspace(0, 150, 16)[1:]
-num_jobs = 20
-#max_error = 2e-4
-max_error = 4e-3
-#xml_path = "/Users/peter/Work/grasshopperPeter/xml/gdml.xsd"
-xml_path = "/home/plalor/grasshopperPeter/xml/gdml.xsd"
+max_error = 5e-4
+xml_path = "/nfs/home2/plalor/grasshopper/xml/gdml.xsd"
 
 ### Loading files to approximate the appropriate number of MC particles to run
 
-path = "/Users/peter/Work/radiography/data/"
-D = np.load(path + "D_10.npy")
-D2 = np.load(path + "D2_10.npy")
-E = np.load(path + "E_10.npy")
-phi_4 = np.load(path + "phi_4MeV_10.npy")
+path = "/Users/peter/Work/semiempirical_transparency/data/"
+D = np.load(path + "D.npy")
+D2 = np.load(path + "D2.npy")
+E = np.load(path + "E.npy")
 
 def calcRelError(lmbda, Z, phi):
     mu = mu_tot(E, Z)
@@ -35,44 +31,51 @@ materials = {Z: material for (Z, material) in zip(material_Z, material_name)}
 
 ### Creating files
 
+N_total = 0
+SLURM_ARRAY_TASK_ID = 0
 for E0 in E_range:
-    phi = np.load(path + "phi_%sMeV_10.npy" % E0)
+    phi = np.load(path + "phi_%sMeV.npy" % E0)
     for Z in Z_range:
         material = materials[Z]
         for lmbda in lmbda_range:
             error = calcRelError(lmbda, Z, phi)
-            N = int((error / max_error)**2 / num_jobs)
+            N = int((error / max_error)**2)
+            assert N <= 2147483647
             
-            filename = "E=%sMeV-lmbda=%d-Z=%d-N=%d.gdml" % (E0, lmbda, Z, N)
+            filename = f"ID={SLURM_ARRAY_TASK_ID}-E={E0}MeV-lmbda={lmbda}-Z={Z}-N={N}.gdml"
             filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
   
-<define>
-  <!-- target material -->
-  <constant name="target_lambda" value="{lmbda}"/> <!-- target area density, g/cm^2 -->
-  <constant name="x_target" value="100"/> <!-- target thickness in cm -->
-  <constant name="y_target" value="200"/> <!-- target depth in cm -->
-  <constant name="z_target" value="400"/> <!-- target height in cm -->
-  <constant name="dist_target" value="350"/> <!-- distance from source to target in cm -->
-  <constant name="target_rho" value="target_lambda/x_target"/> <!-- target density -->
-  <!-- collimator properties -->
-  <constant name="x_collimator" value="10"/>  <!-- thickness in cm -->
-  <constant name="y_collimator" value="20"/>  <!-- depth in cm -->
-  <constant name="z_collimator" value="400"/> <!-- height in cm -->
-  <constant name="sep_collimator" value="1"/> <!-- separation between collimators in cm -->
-  <!-- detector properties -->
-  <constant name="x_detector" value="3.0"/> <!-- thickness in cm -->
-  <constant name="y_detector" value="1.5"/> <!-- depth in cm -->
-  <constant name="z_detector" value="0.46"/>  <!-- height in cm -->
-  <constant name="dist_detector" value="700"/> <!-- distance from source to detector in cm -->
-  <!-- do some calculations to determine these quantities -->
-  <constant name="n_detectors" value="869"/> <!-- z_collimator // z_detector = 869 -->
-  <!-- loop index (for generating detector stack -->
-  <variable name="i"/>
-</define>
-   
-   <materials>
+  <define>    
+    <!-- target container -->
+    <constant name="target_lambda" value="{lmbda}"/> <!-- target area density, g/cm^2 -->
+    <constant name="target_x" value="50"/> <!-- target thickness in cm -->
+    <constant name="target_y" value="50"/> <!-- target depth in cm -->
+    <constant name="target_z" value="100"/> <!-- target height in cm -->
+    <constant name="target_dist" value="100"/> <!-- distance from source to target in cm -->
+    <constant name="target_rho" value="target_lambda/target_y"/> <!-- target density -->
+    
+    <!-- collimator properties -->
+    <constant name="collimator_x" value="20"/>  <!-- length in cm -->
+    <constant name="collimator_y" value="10"/>  <!-- width in cm -->
+    <constant name="collimator_z" value="100"/> <!-- height in cm -->
+    <constant name="collimator_sep" value="1"/> <!-- separation between collimators in cm -->
+    
+    <!-- detector properties -->
+    <constant name="detector_x" value="1.0"/> <!-- length in cm -->
+    <constant name="detector_y" value="3.0"/> <!-- width in cm -->
+    <constant name="detector_z" value="1.0"/>  <!-- height in cm -->
+    <constant name="detector_dist" value="200"/> <!-- distance from source to detector in cm -->
+    
+    <!-- do some calculations to determine these quantities -->
+    <constant name="n_detectors" value="100"/> <!-- collimator_z // detector_z -->
+    
+    <!-- loop index -->
+    <variable name="i"/>
+  </define>
+  
+  <materials>
     
     <material name="Target" state="solid">
       <D unit="g/cm3" value="target_rho"/>
@@ -80,7 +83,7 @@ for E0 in E_range:
     </material>
     
   </materials>
-    
+       
   <!-- THE OUTPUT -->
   <define>
     <constant name="TextOutputOn" value="1"/> <!-- the value should be either 1 (true) or 0 -->
@@ -94,7 +97,7 @@ for E0 in E_range:
     <constant name="LightProducingParticle" value="0"/> <!-- the particle which is actually producing light in the detector.  0 means ALL.  It will also kill all particles other than LightProducingParticle in the detector.  If in doubt set to 0. -->
     <constant name="LowEnergyCutoff" value="0."/><!-- The low energy cuttoff, MeV, for the main track. If in doubt set it to 0 -->
     <constant name="KeepOnlyMainParticle" value="0"/> <!-- if 1, the simulation will track only the main particle, as defined by ParticleNumber in the beam definition, OUTSIDE the detector volume.  For example, you'll need to set this to 0 to simulate bremmstrahlung, but to 1 for any transmission simulation. If in doubt, set to 0.-->
-    <quantity name="ProductionLowLimit" type="threshold" value="100" unit="keV" /> <!-- for neutron processes anything >1keV causes things to hang...set this to a high value for any other process to optimize computational time.  There are still some intricacies with this.  With high enough energy, rather than generating secondaries, all the energy loss will get tagged to the EnergyDeposited for the main particle.  So, the energy scoring (as determined by LighProducingParticle above) needs to be adjusted accordingly. -->
+    <quantity name="ProductionLowLimit" type="threshold" value="80" unit="keV" /> <!-- for neutron processes anything >1keV causes things to hang...set this to a high value for any other process to optimize computational time.  There are still some intricacies with this.  With high enough energy, rather than generating secondaries, all the energy loss will get tagged to the EnergyDeposited for the main particle.  So, the energy scoring (as determined by LighProducingParticle above) needs to be adjusted accordingly. -->
   </define>
 
 <!-- OUTPUT FILTERS.  What data/entries do you want to keep? -->
@@ -112,10 +115,10 @@ for E0 in E_range:
     <quantity name="BeamOffsetZ"  type="coordinate" value="0" unit="cm"/>
     <quantity name="BeamSize" type="coordinate" value="-1" unit="mm"/>
     <quantity name="BeamEnergy" type="energy" value="-2" unit="MeV"/> <!-- this is in MeV --> <!-- a negative number prompts reading input_spectrum.txt -->
-    <quantity name="PhiMin" value="-atan(0.5*sep_collimator/dist_detector)"/>
-    <quantity name="PhiMax" value="atan(0.5*sep_collimator/dist_detector)"/>
-    <quantity name="ThetaMin" value="atan(dist_detector/z_collimator)"/>
-    <quantity name="ThetaMax" value="pi/2"/>
+    <quantity name="PhiMin" value="pi/2-atan(0.5*collimator_sep/detector_dist)"/>
+    <quantity name="PhiMax" value="pi/2+atan(0.5*collimator_sep/detector_dist)"/>
+    <quantity name="ThetaMin" value="pi/2"/>
+    <quantity name="ThetaMax" value="pi/2-atan(collimator_z/detector_dist)"/>
     <constant name="EventsToRun" value="{N}"/>
     <constant name="ParticleNumber" value="22"/>
     <!-- e- is 11, gamma is 22, neutron is 2112, proton is 2212, alpha is 1000020040 -->
@@ -128,38 +131,38 @@ for E0 in E_range:
     <box name="world_solid" x="20" y="20" z="20" lunit="m"/>
     
     <!-- target -->
-    <box name = "target_box" x="x_target" y="y_target" z="z_target" lunit= "cm"/>
+    <box name = "target_box" x="target_x" y="target_y" z="target_z" lunit= "cm"/>
     
     <!-- collimators -->
-    <box name = "collimator_1" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
-    <box name = "collimator_2" x="x_collimator" y="y_collimator" z="z_collimator" lunit= "cm"/>
+    <box name="collimator1" x="collimator_x" y="collimator_y" z="collimator_z" lunit="cm"/>
+    <box name="collimator2" x="collimator_x" y="collimator_y" z="collimator_z" lunit="cm"/>
     
     <!-- cadmium tungstate detectors -->
     <loop for="i" from="1" to="n_detectors" step="1">
-      <box name = "CdWO4_detector[i]" x="x_detector" y="y_detector" z="z_detector" lunit= "cm"/>
+      <box name = "CdWO4_detector[i]" x="detector_x" y="detector_y" z="detector_z" lunit= "cm"/>
     </loop>
   </solids>
 
 
   <!-- PUTTING IT ALL TOGETHER -->
   <structure>
-       
-     <!-- target -->
-     <volume name="target_log">
-       <materialref ref="Target"/>
-       <solidref ref="target_box"/>
-     </volume>
-       
-     <!-- collimators -->
-     <volume name="collimator_1_log">
-       <materialref ref="G4_Pb"/>
-       <solidref ref="collimator_1"/>
-     </volume>
-     
-     <volume name="collimator_2_log">
-       <materialref ref="G4_Pb"/>
-       <solidref ref="collimator_2"/>
-     </volume>
+    
+    <!-- target -->
+    <volume name="target_log">
+      <materialref ref="Target"/>
+      <solidref ref="target_box"/>
+    </volume>
+    
+    <!-- collimators -->
+    <volume name="collimator1_log">
+      <materialref ref="G4_Pb"/>
+      <solidref ref="collimator1"/>
+    </volume>
+    
+    <volume name="collimator2_log">
+      <materialref ref="G4_Pb"/>
+      <solidref ref="collimator2"/>
+    </volume>
 
     <!-- CdWO4 detector -->
     <loop for="i" from="1" to="n_detectors" step="1">
@@ -177,25 +180,25 @@ for E0 in E_range:
       <!-- target -->
       <physvol name="target_phys">
         <volumeref ref="target_log"/>
-        <position name="target_pos" unit="cm" x="dist_detector/2" y="0" z="z_target/2"/>
+        <position name="target_pos" unit="cm" x="0" y="target_dist+target_y/2" z="target_z/2"/>
       </physvol>
-      
+            
       <!-- collimators -->
-      <physvol name="collimator_1_phys">
-        <volumeref ref="collimator_1_log"/>
-        <position name="collimator_1_pos" unit="cm" x="dist_detector-x_collimator/2" y="(y_collimator+sep_collimator)/2" z="z_collimator/2"/>
+      <physvol name="collimator1_phys">
+        <volumeref ref="collimator1_log"/>
+        <position name="collimator1_pos" x="(collimator_x+collimator_sep)/2" y="detector_dist-collimator_y/2" z="collimator_z/2" unit="cm"/>
       </physvol>
       
-      <physvol name="collimator_2_phys">
-        <volumeref ref="collimator_2_log"/>
-        <position name="collimator_2_pos" unit="cm" x="dist_detector-x_collimator/2" y="-(y_collimator+sep_collimator)/2" z="z_collimator/2"/>
+      <physvol name="collimator2_phys">
+        <volumeref ref="collimator2_log"/>
+        <position name="collimator2_pos" x="-(collimator_x+collimator_sep)/2" y="detector_dist-collimator_y/2" z="collimator_z/2" unit="cm"/>
       </physvol>
       
       <!-- detector -->
       <loop for="i" from="1" to="n_detectors" step="1">
         <physvol name="det_phys[i]">
           <volumeref ref="CdWO4_detector_log[i]"/>
-          <position name="CdWO4_detector_pos[i]" unit="cm" x="dist_detector+x_detector/2" y="0" z="(2*i-1)*z_detector/2"/>
+          <position name="CdWO4_detector_pos[i]" x="0" y="detector_dist+detector_x/2" z="(2*i-1)*detector_z/2" unit="cm"/>
         </physvol>
       </loop>
 
@@ -210,3 +213,7 @@ for E0 in E_range:
 """
             with open(filename, "w") as f:
                 f.write(filestring)
+            SLURM_ARRAY_TASK_ID += 1
+            N_total += N
+
+print("Complete, with %.2e total particles and %d input files" % (N_total, SLURM_ARRAY_TASK_ID))

@@ -5,29 +5,22 @@ import sys
 import os
 import re
 
-path_data = "/home/plalor/radiography/data/"
-path = "/home/plalor/semiempirical_transparency/"
+path_data = "/nfs/home2/plalor/semiempirical_transparency/data/"
 
 ### Parsing user input
 
-if len(sys.argv) != 2:
-    raise ValueError("Usage: python calcEnergyDeposited.py <data_dir>")
-    
-data_dir = sys.argv[1]
-assert data_dir in ("openBeam", "test", "calib", "highZ", "lowLmbda")
+if len(sys.argv) == 2:
+    filepath = sys.argv[1]
+else:
+    raise ValueError("Usage: python calcEnergyDeposited.py <filepath>")
 
 ### Loading simulation parameters
 
-D = np.load(path_data + "D_10.npy")
-E = np.load(path_data + "E_10.npy")
+D = np.load(path_data + "D.npy")
+E = np.load(path_data + "E.npy")
 Z_range = np.arange(1, 101)
 mu_mat = calcMu_tot(E, Z_range)
-theta = np.arcsin(400 / 700)
-
-phi_dict = {}
-phi_dict["10"] = np.load(path_data + "phi_10MeV_10.npy")
-phi_dict["6"] = np.load(path_data + "phi_6MeV_10.npy")
-phi_dict["4"] = np.load(path_data + "phi_4MeV_10.npy")
+theta = np.arctan(1/2)
 
 ### Adding compound materials
 
@@ -57,52 +50,53 @@ compound_w[107] = np.array([0.118502, 0.881498])
 
 ### Functions to perform analysis
 
-def calcEnergyDeposited(data_dir):
+def calcEnergyDeposited(filepath):
     """Calculates the average energy deposited per particle (and the 
-    corresponding uncertainty) from each .dat file in the given directory"""
-    run_directory = path + "run/" + data_dir + "/"
-    out_directory = path + "out/" + data_dir + "/"
-    for directory in os.listdir(run_directory):
-        N = 0
-        E_deposited = 0
-        sigma = 0        
-        for filename in os.listdir(run_directory + directory):
-            if filename.endswith(".dat"):
-                N += int(re.search("N=(\d+)", filename)[1])
-                with open(run_directory + directory + "/" + filename) as f:
-                    header = np.array(f.readline().split())
-                    idx = np.argmax(header == "E_deposited(MeV)")
-                    for line in f:
-                        energy = float(line.split()[idx])
-                        E_deposited += energy
-                        sigma += energy**2
+    corresponding uncertainty) from each .dat file in the given directory"""    
+    print("Calculating energy deposited...", end='')
+    filepath_split = filepath.split("/")
+    path = "/".join(filepath_split[:-1])
+    run_dir = filepath_split[-3]
+    filename = filepath_split[-1]
+    E = re.search("E=(\d+\.?\d+|\d+)", filename)[1]
+    lmbda = int(re.search("lmbda=(\d+\.?\d+|\d+)", filename)[1])
+    N = int(re.search("N=(\d+)", filename)[1])
+    phi = np.load(path_data + "phi_%dMeV.npy" % E)
+    E_deposited = 0
+    var_deposited = 0  
+    with open(filepath) as f:
+        header = np.array(f.readline().split())
+        idx = np.argmax(header == "E_deposited(MeV)")
+        for line in f:
+            E_dep = float(line.split()[idx])
+            E_deposited += E_dep
+            var_deposited += E_dep**2
         E_deposited = E_deposited / N
-        sigma = np.sqrt(sigma) / N
+        var_deposited = var_deposited / N
 
-        ### Save to file  
-        E = re.search("E=(\d+\.?\d+|\d+)", directory)[1]
-        lmbda = int(re.search("lmbda=(\d+\.?\d+|\d+)", directory)[1])
-        data = {}
-        data["E"] = E
-        data["lambda"] = lmbda
-        data["E_deposited"] = E_deposited
-        data["sigma"] = sigma
-        if lmbda > 0:
-            Z = int(re.search("Z=(\d+)", directory)[1])
-            phi = phi_dict[E]
-            if Z <= 100:
-                lmbda_eff = calcLambdaEff(lmbda, theta, Z, phi, D, mu_mat, Z_range)
-            else:
-                Z_arr = compound_Z[Z]
-                w_arr = compound_w[Z]
-                lmbda_eff = calcCompoundLambdaEff(lmbda, theta, Z_arr, w_arr, phi, D, mu_mat, Z_range)
-            data["Z"] = Z
-            data["lambda_eff"] = lmbda_eff
-            fileout = "E=%sMeV-lmbda=%s-Z=%s.npy" % (E, lmbda, Z)
+    ### Save to file  
+    data = {}
+    data["E"] = E
+    data["lambda"] = lmbda
+    data["E_deposited"] = E_deposited
+    data["var_deposited"] = var_deposited
+    if lmbda > 0:
+        Z = int(re.search("Z=(\d+)", filename)[1])
+        if Z <= 100:
+            lmbda_eff = calcLambdaEff(lmbda, theta, Z, phi, D, mu_mat, Z_range)
         else:
-            fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
-                
-        np.save(out_directory + fileout, data)
+            Z_arr = compound_Z[Z]
+            w_arr = compound_w[Z]
+            lmbda_eff = calcCompoundLambdaEff(lmbda, theta, Z_arr, w_arr, phi, D, mu_mat, Z_range)
+        data["Z"] = Z
+        data["lambda_eff"] = lmbda_eff
+        fileout = "E=%sMeV-lmbda=%s-Z=%s.npy" % (E, lmbda, Z)
+    else:
+        fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
+
+    outfile = f"{path}/{fileout}"
+    np.save(outfile, data)
+    print("saved output to", outfile)
             
 def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
     """Finds the effective lambda which approximates the entire target"""
@@ -148,4 +142,4 @@ def calcCompoundLambdaEff(lmbda0, theta0, Z_arr, w_arr, phi, D, mu_mat, Z_range)
 
 ### Run
 
-calcEnergyDeposited(data_dir)
+calcEnergyDeposited(filepath)
