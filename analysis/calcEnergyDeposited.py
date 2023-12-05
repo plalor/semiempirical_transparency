@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import root
 from utils import calcMu_tot
+from time import perf_counter as time
 import sys
 import os
 import re
@@ -51,9 +52,8 @@ compound_w[107] = np.array([0.118502, 0.881498])
 ### Functions to perform analysis
 
 def calcEnergyDeposited(filepath):
-    """Calculates the average energy deposited per particle (and the 
-    corresponding uncertainty) from each .dat file in the given directory"""    
-    print("Calculating energy deposited...", end='')
+    """Calculates the average energy deposited per particle and the 
+    corresponding uncertainty from the given .dat file"""   
     filepath_split = filepath.split("/")
     path = "/".join(filepath_split[:-1])
     run_dir = filepath_split[-3]
@@ -63,7 +63,10 @@ def calcEnergyDeposited(filepath):
     N = int(re.search("N=(\d+)", filename)[1])
     phi = np.load(path_data + "phi_%dMeV.npy" % E)
     E_deposited = 0
-    var_deposited = 0  
+    var_deposited = 0
+    
+    print("Calculating energy deposited...", end='')
+    t0 = time()
     with open(filepath) as f:
         header = np.array(f.readline().split())
         idx = np.argmax(header == "E_deposited(MeV)")
@@ -94,9 +97,10 @@ def calcEnergyDeposited(filepath):
     else:
         fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
 
+    print("completed in %d seconds" % (time() - t0))
     outfile = f"{path}/{fileout}"
     np.save(outfile, data)
-    print("saved output to", outfile)
+    print("Saved output to", outfile)
             
 def calcLambdaEff(lmbda0, theta0, Z, phi, D, mu_mat, Z_range):
     """Finds the effective lambda which approximates the entire target"""

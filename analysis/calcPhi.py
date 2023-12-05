@@ -1,7 +1,8 @@
 import numpy as np
-import re
-import os
+from time import perf_counter as time
 import sys
+import os
+import re
 
 ### Parsing user input
 
@@ -21,10 +22,11 @@ def calcPhotonFlux(filepath, energy, E_max, E_bins):
     filepath_split = filepath.split("/")
     path = "/".join(filepath_split[:-1])
     filebase = filepath_split[-1]
-
     dE_inv = E_bins / E_max
     phi = np.zeros(E_bins)
-    print("Calculating Photon Flux...")
+    
+    print("Calculating photon flux...", end='')
+    t0 = time()
     for filename in os.listdir(path):
         if filename.startswith(filebase) and filename.endswith(".dat"):
             with open("/".join([path, filename])) as f:
@@ -44,13 +46,13 @@ def calcPhotonFlux(filepath, energy, E_max, E_bins):
     phi = phi * dE_inv / np.sum(phi)
     E_arr = np.linspace(0, E_max, E_bins+1)
     E = 0.5*(E_arr[1:] + E_arr[:-1])
-
+    print("completed in %d seconds" % (time() - t0))
+    
     phi_outfile = f"{path}/phi_{energy}MeV.npy"
     E_outfile = f"{path}/E.npy"
     np.save(phi_outfile, phi)
     np.save(E_outfile, E)
     print("Saved phi to", phi_outfile)
     print("Saved E to", E_outfile)
-    return phi
 
 calcPhotonFlux(filepath, energy, E_max, E_bins)

@@ -1,6 +1,7 @@
 import numpy as np
-import os
+from time import perf_counter as time
 import sys
+import os
 
 ### Parsing user input
 
@@ -24,7 +25,8 @@ def calcDetectorResponse(filepath, E_max, E_bins):
     D = np.zeros(E_bins)
     D2 = np.zeros(E_bins)
     N = np.zeros(E_bins)
-    print("Calculating Detector Response...")
+    print("Calculating detector response...", end='')
+    t0 = time()
     for filename in os.listdir(path):
         if filename.startswith(filebase) and filename.endswith(".dat"):
             with open("/".join([path, filename])) as f:
@@ -41,6 +43,8 @@ def calcDetectorResponse(filepath, E_max, E_bins):
                     N[idx] += 1
     D /= N
     D2 /= N
+    print("completed in %d seconds" % (time() - t0))
+    
     D_outfile = f"{path}/D.npy"
     D2_outfile = f"{path}/D2.npy"
     np.save(D_outfile, D)

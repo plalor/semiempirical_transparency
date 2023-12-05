@@ -18,7 +18,8 @@ fi
 filebase=$1
 input_dir="/nfs/home2/plalor/semiempirical_transparency/src/beam_simulations"
 outfile="/pool001/plalor/semiempirical_transparency/beam_simulations/${filebase}_${SLURM_ARRAY_TASK_ID}"
+
 cd $input_dir
 grasshopper ${filebase}.gdml "${outfile}.root" $SLURM_ARRAY_TASK_ID
-rm "${output_file}.log"
-rm "${output_file}_error.log"
+rm "${outfile}.log"
+rm "${outfile}_error.log"
