@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=0-49
+#SBATCH --array=50-99
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
@@ -16,8 +16,9 @@ if [ "$#" -ne 1 ]; then
 fi
 
 filebase=$1
-input_file="/nfs/home2/plalor/semiempirical_transparency/src/beam_simulations/${filebase}.gdml"
+input_dir="/nfs/home2/plalor/semiempirical_transparency/src/beam_simulations"
 outfile="/pool001/plalor/semiempirical_transparency/beam_simulations/${filebase}_${SLURM_ARRAY_TASK_ID}"
-grasshopper $input_file "${outfile}.root" $SLURM_ARRAY_TASK_ID
+cd $input_dir
+grasshopper ${filebase}.gdml "${outfile}.root" $SLURM_ARRAY_TASK_ID
 rm "${output_file}.log"
 rm "${output_file}_error.log"
