@@ -75,7 +75,7 @@ def calcEnergyDeposited(filepath):
             E_deposited += E_dep
             var_deposited += E_dep**2
         E_deposited = E_deposited / N
-        var_deposited = var_deposited / N
+        var_deposited = var_deposited / N**2
 
     ### Save to file  
     data = {}
