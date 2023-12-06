@@ -4,8 +4,7 @@ from XCOM import mu_tot
 ### File Input Parameters
 
 Z_range = np.array([82, 26, 6])
-#E_range = ["4", "6", "10"]
-E_range = ["4", "6"]
+E_range = ["4", "6", "10"]
 lmbda_range = np.array([150])
 num_jobs = 400
 max_error = 1e-5
