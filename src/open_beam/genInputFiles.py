@@ -73,8 +73,8 @@ for E0 in E_range:
 <!-- OUTPUT FILTERS.  What data/entries do you want to keep? -->
   <define>
     <constant name="SaveSurfaceHitTrack" value="0"/> <!-- save entries which contain hit information, e.g. if you want to simulate the flux of particles -->
-    <constant name="SaveTrackInfo" value="0"/> <!-- save individual track info (within an event).  This is useful for studying the physics of the various interactions -->
-    <constant name="SaveEdepositedTotalEntry" value="1"/> <!--save entries which summarize the total deposited energy, e.g. in detector response simulations -->
+    <constant name="SaveTrackInfo" value="1"/> <!-- save individual track info (within an event).  This is useful for studying the physics of the various interactions -->
+    <constant name="SaveEdepositedTotalEntry" value="0"/> <!--save entries which summarize the total deposited energy, e.g. in detector response simulations -->
   </define>
 
   <!-- THE BEAM -->
