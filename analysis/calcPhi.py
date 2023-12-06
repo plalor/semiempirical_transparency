@@ -48,7 +48,7 @@ def calcPhotonFlux(filepath, energy, E_max, E_bins):
     E = 0.5*(E_arr[1:] + E_arr[:-1])
     print("completed in %d seconds" % (time() - t0))
     
-    phi_outfile = f"{path}/phi_{energy}MeV.npy"
+    phi_outfile = f"{path}/phi_{energy:g}MeV.npy"
     E_outfile = f"{path}/E.npy"
     np.save(phi_outfile, phi)
     np.save(E_outfile, E)
