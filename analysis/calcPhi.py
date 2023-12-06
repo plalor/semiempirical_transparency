@@ -10,7 +10,7 @@ if len(sys.argv) != 2:
     raise ValueError("Usage: python calcPhi.py <filepath>")
     
 filepath = sys.argv[1]
-energy = float(re.search("E=(\d+\.?\d+|\d+)", filepath)[1])
+energy = float(re.search("(\d+\.?\d+|\d+)MeV", filepath)[1])
         
 ### Definitions
 
