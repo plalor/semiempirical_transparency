@@ -29,7 +29,7 @@ for E0 in E_range:
     N = int((error / max_error)**2)
     assert N <= 2147483647 # Largest value for G4Int
         
-    filename = f"ID={SLURM_ARRAY_TASK_ID}-E={E0}MeV-N={N}.gdml"
+    filename = f"ID={SLURM_ARRAY_TASK_ID}-E={E0}MeV-lmbda=0-N={N}.gdml"
     filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
