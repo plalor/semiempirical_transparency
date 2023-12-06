@@ -13,7 +13,7 @@ input_file="$(find $dir/src/open_beam/ID=$SLURM_ARRAY_TASK_ID-*)"
 
 E=$(expr "$input_file" : '.*E=\([0-9.]*\).*')
 N=$(expr "$input_file" : '.*N=\([0-9]*\).*')
-filebase="E=${E}MeV"
+filebase="E=${E}MeV-lmbda=0"
 
 output_dir="/pool001/plalor/semiempirical_transparency/open_beam/${filebase}"
 output_file="${output_dir}/${filebase}-N=${N}"
