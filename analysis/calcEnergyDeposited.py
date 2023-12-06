@@ -61,7 +61,7 @@ def calcEnergyDeposited(filepath):
     E = re.search("E=(\d+\.?\d+|\d+)", filename)[1]
     lmbda = int(re.search("lmbda=(\d+\.?\d+|\d+)", filename)[1])
     N = int(re.search("N=(\d+)", filename)[1])
-    phi = np.load(path_data + "phi_%dMeV.npy" % E)
+    phi = np.load(path_data + "phi_%sMeV.npy" % E)
     E_deposited = 0
     var_deposited = 0
     
@@ -96,6 +96,9 @@ def calcEnergyDeposited(filepath):
         fileout = "E=%sMeV-lmbda=%s-Z=%s.npy" % (E, lmbda, Z)
     else:
         fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
+    if run_dir == "calib": # running multiple files, need to separate by ID
+        ID = int(re.search("ID=(\d+)", filename)[1])
+        fileout = f"ID={ID}-{fileout}"
 
     print("completed in %d seconds" % (time() - t0))
     outfile = f"{path}/{fileout}"

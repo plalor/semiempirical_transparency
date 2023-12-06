@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=0-49
+#SBATCH --array=250-299
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
@@ -9,12 +9,13 @@
 #SBATCH --output=/dev/null
 #SBATCH --requeue
 
-job_end=3600
+job_start=0
+job_end=2400
 #task_count=$SLURM_ARRAY_TASK_COUNT
-task_count=450
+task_count=300
 dir="/nfs/home2/plalor/semiempirical_transparency"
 
-for (( TASK_ID=$SLURM_ARRAY_TASK_ID; TASK_ID < $job_end; TASK_ID += $task_count ))
+for (( TASK_ID=$SLURM_ARRAY_TASK_ID+$job_start; TASK_ID < $job_end; TASK_ID += $task_count ))
 do
   input_file="$(find $dir/src/calib/ID=$TASK_ID-*)"
 
