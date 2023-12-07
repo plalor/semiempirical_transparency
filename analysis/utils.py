@@ -11,10 +11,9 @@ def calcLookupTables(data_dir):
     for filename in os.listdir(path + "open_beam"):
         if filename.endswith(".npy"):
             data = np.load(path + "open_beam/" + filename, allow_pickle=True).item()
-            if data["lambda"] == 0:
-                E = data["E"]
-                E_openBeam[E] = data["E_deposited"]
-                var_openBeam[E] = data["var_deposited"]
+            E = data["E"]
+            E_openBeam[E] = data["E_deposited"]
+            var_openBeam[E] = data["var_deposited"]
 
     energies = list(E_openBeam.keys())
     lookupTables = {E: {} for E in energies}
@@ -128,8 +127,8 @@ def lookup(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, Z_range):
     """Calculate alpha and its derivatives for a given material and array of thicknesses"""
     D_phi_H = D * phi_H
     D_phi_L = D * phi_L
-    d_H = np.dot(D, phi_H)
-    d_L = np.dot(D, phi_L)
+    d_H = np.sum(D_phi_H)
+    d_L = np.sum(D_phi_L)
     mu_H = mu_mat_H[:,Z - Z_range[0]]
     mu_L = mu_mat_L[:,Z - Z_range[0]]
     m0_H = np.exp(-np.outer(mu_H, lmbda))
@@ -159,17 +158,11 @@ def fitToTheory(alpha_H, alpha_L, phi_H, phi_L, D, mu_mat_H, mu_mat_L, Z_range):
     lmbda = np.ones(alpha_H.size)
     for i in range(b):
         Z = Z_range[i]
-        if i == 0:
-            nsteps = 6
-        elif i == 1:
-            nsteps = 4
-        else:
-            nsteps = 2  
+        nsteps = 5 if i == 0 else 2 
         for _ in range(nsteps):
             alpha_H0, alpha_L0, alpha_H1, alpha_L1, alpha_H2, alpha_L2 = lookup(lmbda, Z, phi_H, phi_L, D, mu_mat_H, mu_mat_L, Z_range)
             diff_H = alpha_H0 - alpha_H
             diff_L = alpha_L0 - alpha_L
-
             grad = diff_H * alpha_H1 + diff_L * alpha_L1
             hess = diff_H * alpha_H2 + alpha_H1**2 + diff_L * alpha_L2 + alpha_L1**2
             lmbda = lmbda - grad / hess
@@ -297,7 +290,7 @@ def fitSemiempirical(alpha, lmbda, Z, phi, D, mu_mat_tot, mu_mat_PE, mu_mat_CS, 
         loss_vec = (alpha0 - alpha)**2
         return np.mean(loss_vec)
     
-    res = minimize(calcLoss, x0=(1, 1, 1))
+    res = minimize(calcLoss, x0=(1, 1, 1), bounds=[(0, None)]*3)
     assert res.success
     a, b, c = res.x
     loss = res.fun
