@@ -5,7 +5,7 @@ from XCOM import mu_tot
 
 Z_range = np.array([64, 74, 82, 92])
 E_range = ["4", "6", "10"]
-lmbda_range = np.linspace(0, 150, 16)[1:]
+lmbda_range = np.linspace(0, 150, 16, dtype=int)[1:]
 max_error = 5e-4
 xml_path = "/nfs/home2/plalor/grasshopper/xml/gdml.xsd"
 
