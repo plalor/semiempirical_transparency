@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=0-18
+#SBATCH --array=0-49
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
@@ -9,9 +9,9 @@
 #SBATCH --output=/dev/null
 #SBATCH --requeue
 
-job_end=180
+job_end=1800
 #task_count=$SLURM_ARRAY_TASK_COUNT
-task_count=19
+task_count=190
 dir="/nfs/home2/plalor/semiempirical_transparency"
 
 for (( TASK_ID=$SLURM_ARRAY_TASK_ID; TASK_ID < $job_end; TASK_ID += $task_count ))

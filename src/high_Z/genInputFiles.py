@@ -6,7 +6,8 @@ from XCOM import mu_tot
 Z_range = np.array([64, 74, 82, 92])
 E_range = ["4", "6", "10"]
 lmbda_range = np.linspace(0, 150, 16, dtype=int)[1:]
-max_error = 5e-4
+num_jobs = 10
+max_error = 2e-4
 xml_path = "/nfs/home2/plalor/grasshopper/xml/gdml.xsd"
 
 ### Loading files to approximate the appropriate number of MC particles to run
@@ -39,11 +40,12 @@ for E0 in E_range:
         material = materials[Z]
         for lmbda in lmbda_range:
             error = calcRelError(lmbda, Z, phi)
-            N = int((error / max_error)**2)
+            N = int((error / max_error)**2 / num_jobs)
             assert N <= 2147483647
             
-            filename = f"ID={SLURM_ARRAY_TASK_ID}-E={E0}MeV-lmbda={lmbda}-Z={Z}-N={N}.gdml"
-            filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+            for _ in range(num_jobs):
+                filename = f"ID={SLURM_ARRAY_TASK_ID}-E={E0}MeV-lmbda={lmbda}-Z={Z}-N={N}.gdml"
+                filestring = f"""<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 
 <gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="{xml_path}">
   
@@ -211,9 +213,9 @@ for E0 in E_range:
   </setup>
 </gdml>
 """
-            with open(filename, "w") as f:
-                f.write(filestring)
-            SLURM_ARRAY_TASK_ID += 1
-            N_total += N
+                with open(filename, "w") as f:
+                    f.write(filestring)
+                SLURM_ARRAY_TASK_ID += 1
+                N_total += N
 
 print("Complete, with %.2e total particles and %d input files" % (N_total, SLURM_ARRAY_TASK_ID))
