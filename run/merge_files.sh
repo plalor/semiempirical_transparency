@@ -7,7 +7,7 @@
 #SBATCH --time=7-00:00:00
 
 dir="/nfs/home2/plalor/semiempirical_transparency"
-outdir="/pool001/plalor/semiempirical_transparency/calib"
+outdir="/pool001/plalor/semiempirical_transparency/high_Z"
 
 for folder in "$outdir"/*/
 do

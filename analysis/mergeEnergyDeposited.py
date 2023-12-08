@@ -50,7 +50,7 @@ def mergeEnergyDeposited(filepath):
     ###
     
     #np.save(filepath + outfile, data)
-    np.save("/nfs/home2/plalor/semiempirical_transparency/data/calib/" + outfile, data)
+    np.save("/nfs/home2/plalor/semiempirical_transparency/data/high_Z/" + outfile, data)
     print("Successfully merged %d files to %s\n" % (num_jobs, outfile))
     #for filename in npy_files:
     #    os.remove(filepath + filename)
