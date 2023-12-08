@@ -96,7 +96,7 @@ def calcEnergyDeposited(filepath):
         fileout = "E=%sMeV-lmbda=%s-Z=%s.npy" % (E, lmbda, Z)
     else:
         fileout = "E=%sMeV-lmbda=%s.npy" % (E, lmbda)
-    if run_dir == "calib": # running multiple files, need to separate by ID
+    if run_dir == "calib" or run_dir == "high_Z": # running multiple files, need to separate by ID
         ID = int(re.search("ID=(\d+)", filename)[1])
         fileout = f"ID={ID}-{fileout}"
 
