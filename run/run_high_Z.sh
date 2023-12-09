@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=0-49
+#SBATCH --array=150-189
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
